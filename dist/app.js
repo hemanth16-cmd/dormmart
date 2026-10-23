@@ -1,3 +1,4 @@
+function listingStatusText(x){return x.status==='sold'?'Sold':x.status==='rented'?(x.mode==='share'?'On loan':'Rented out'):'Available'}
 /* DormMart core application logic */
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
@@ -105,7 +106,7 @@ function card(x) {
           <span>◎ ${x.custom ? 'Your listing' : x.distance + ' km away'}</span>
         </div>
         <h3><a class="card-link" href="#item-${x.id}">${escapeHTML(x.title)}</a></h3>
-        <span class="condition-badge">${escapeHTML(x.condition || 'Good')}</span>
+        <span class="condition-badge">${listingStatusText(x)}</span> <span class="condition-badge">${escapeHTML(x.condition || 'Good')}</span>
         <div class="card-price">
           ${x.price ? money(x.price) : 'Free'} <small>${modeSub}</small>
         </div>
@@ -335,7 +336,7 @@ function openItem(id) {
       </p>
     </div>
 
-    <form class="detail-form" id="booking-form">
+    <p class="notice">Availability: ${listingStatusText(x)}${x.status&&x.status!=='available'?'. This item is currently unavailable.':''}</p><form class="detail-form" id="booking-form">
       ${borrow ? `
         <div class="detail-grid">
           <label>Pickup date
@@ -368,7 +369,7 @@ function openItem(id) {
         <input type="checkbox" required> I understand this is a demo request; no payment is collected.
       </label>
 
-      <button class="button" type="submit">
+      <button class="button" type="submit" ${x.status&&x.status!=='available'?'disabled':''}>
         ${x.mode === 'buy' ? 'Send purchase interest' : 'Request ' + (rental ? 'rental' : 'to borrow')} ↗
       </button>
 
@@ -408,7 +409,7 @@ function openItem(id) {
 
   form.onsubmit = e => {
     e.preventDefault();
-    const z = quote();
+    if(x.status&&x.status!=='available'){toast('This item is currently unavailable.');return}const z = quote();
     if (!z.valid || !form.reportValidity()) return;
 
     const request = {
