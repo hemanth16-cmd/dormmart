@@ -32,8 +32,17 @@ $('#modal-body').addEventListener('click',e=>{
   const edit=e.target.closest('[data-edit-listing]');if(edit){openListingForm(Number(edit.dataset.editListing));return}const b=e.target.closest('[data-remove-listing]');if(!b)return;
   const id=Number(b.dataset.removeListing), index=userListings.findIndex(x=>x.id===id);
   if(index<0)return;
-  userListings.splice(index,1);const itemIndex=LISTINGS.findIndex(x=>x.id===id);if(itemIndex>=0)LISTINGS.splice(itemIndex,1);
-  saved=saved.filter(x=>x!==id);persist('dormmart-listings-v2',userListings);persist('dormmart-saved',saved);render();showMyListings();toast('Listing removed from this browser.');
+  const item=userListings[index];
+  showModal(`<p class="eyebrow">REMOVE YOUR LISTING</p><h2 id="modal-title">Remove this item?</h2><p><strong>${escapeHTML(item.title)}</strong> will be removed from this browser’s marketplace and saved items. Its listing photos will also be removed. Existing request history stays.</p><p>You can mark it unavailable instead if you want to keep it for later.</p><div class="detail-grid"><button type="button" class="button" id="keep-listing">Keep listing</button><button type="button" class="text-btn" id="confirm-remove-listing">Yes, remove listing</button></div><p id="remove-error" class="form-error" role="alert"></p>`);
+  $('#keep-listing').onclick=()=>{showMyListings();$(`[data-remove-listing="${id}"]`)?.focus()};
+  $('#keep-listing').focus();
+  $('#confirm-remove-listing').onclick=()=>{
+    const current=userListings.findIndex(x=>x.id===id);if(current<0){showMyListings();return}
+    const remaining=userListings.filter(x=>x.id!==id);
+    try{localStorage.setItem('dormmart-listings-v2',JSON.stringify(remaining))}catch{$('#remove-error').textContent='Could not save the removal. Your listing is unchanged. Please try again.';return}
+    userListings.splice(current,1);const itemIndex=LISTINGS.findIndex(x=>x.id===id);if(itemIndex>=0)LISTINGS.splice(itemIndex,1);
+    saved=saved.filter(x=>x!==id);persist('dormmart-saved',saved);render();showMyListings();toast('Listing removed from this browser.');
+  };
 });
 async function compressPhoto(file){
   if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>8*1024*1024)throw Error('Choose JPG, PNG or WebP photos, up to 8 MB each.');
