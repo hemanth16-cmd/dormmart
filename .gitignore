@@ -1,8 +1,21 @@
-.openai/
+# Dependencies
+node_modules/
+
+# Environment and credentials
 .env
 .env.*
-!.env.example
-node_modules/
+*.env
+credentials*
+*credentials*
+
+# Logs
 *.log
+logs/
+
+# OpenAI / AI IDE metadata
+.openai/
+.gemini/
+
+# OS artifacts
 .DS_Store
 Thumbs.db

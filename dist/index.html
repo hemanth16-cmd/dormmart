@@ -1,6 +1,234 @@
 <!doctype html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#edece6"><meta name="description" content="DormMart — rent, buy and share useful things nearby. Interactive demo."><title>DormMart — Good things, closer.</title><link rel="stylesheet" href="styles.css"><script src="data.js" defer></script><script src="app.js" defer></script></head>
-<body><a class="skip" href="#main">Skip to content</a><div class="demo">A little preview of a more circular campus. <strong>Demo · no real transactions</strong></div><header class="header wrap"><a href="#home" class="logo" aria-label="DormMart home"><span class="brand-icon">d.</span>DormMart<span class="logo-dot">✳</span></a><nav aria-label="Main"><a href="#home">Home</a><a href="#explore">Explore</a><a href="#how">How it works</a></nav><div class="header-actions"><button class="text-btn" id="saved-button">♡ Saved <span id="saved-count">0</span></button><button class="button small" id="list-button">+ List an item</button></div></header>
-<main id="main" tabindex="-1"><section id="home-view"><div class="hero wrap"><div class="hero-copy"><p class="eyebrow"><span class="dot"></span> YOUR NEIGHBOURHOOD. YOUR MARKETPLACE.</p><h1>Big plans.<br>Small budgets.<br><span>Good neighbours.</span></h1><p class="intro">Rent it for the weekend. Buy it for the semester.<br>Share it with someone around the corner.</p><form id="hero-search" class="search"><span aria-hidden="true">⌕</span><input name="query" aria-label="Search nearby items" placeholder="What are you looking for?"><button class="button">Find it nearby ↗</button></form><p class="micro">◎ Around Presidency University · demo neighbourhood</p><div class="hero-proof"><span class="avatar">A</span><span class="avatar orange">R</span><span class="avatar green">M</span><span>Less buying new.<br><strong>More making things happen.</strong></span></div></div><div class="hero-art" aria-label="Illustrated collection of things to rent, buy and share"><div class="orbit"></div><span class="art-spark">✳</span><div class="floating-note">One campus.<br><strong>Endless possibilities.</strong></div><div class="hero-object camera"><span>📷</span><div><small>FOR YOUR NEXT ADVENTURE</small><strong>Borrow the moment.</strong><b>From ₹250 / day ↗</b></div></div><div class="hero-object chair"><span>🪑</span><strong>A new favourite spot.</strong><small>Pre-loved. Ready for you.</small></div><span class="round-sticker">GOOD FINDS<br>GREAT PEOPLE<br>↗</span><span class="art-caption">A SECOND LIFE LOOKS GOOD ON EVERYTHING.</span></div></div><div class="ticker" aria-hidden="true">RENT A LITTLE. <span>✳</span> SAVE A LOT. <span>✳</span> KEEP IT LOCAL. <span>✳</span> PASS IT ON. <span>✳</span> RENT A LITTLE.</div><section class="wrap section"><div class="section-heading"><div><p class="eyebrow">THE GOOD STUFF, CLOSE BY</p><h2>Your next find is right here.</h2></div><a class="arrow-link" href="#explore">Explore everything ↗</a></div><div class="category-row" id="home-categories"></div><div id="featured" class="grid"></div></section><section class="how wrap section" id="how"><div><p class="eyebrow">LESS FUSS. MORE POSSIBILITIES.</p><h2>From “I need that”<br>to “got it.”</h2><a class="button" href="#explore">Find your first thing ↗</a></div><ol><li><span>01</span><div><h3>Find it around you</h3><p>Explore useful things in your neighbourhood, at a distance that works for you.</p></div></li><li><span>02</span><div><h3>Know who’s on the other side</h3><p>Check specific verification badges, review counts and item condition.</p></div></li><li><span>03</span><div><h3>Agree, meet, make it yours</h3><p>Review costs and pickup terms. Rental requests need the owner’s acceptance.</p></div></li></ol></section></section>
-<section id="explore-view" class="wrap section" hidden><p class="eyebrow">A WORLD OF USEFUL, JUST A WALK AWAY</p><div class="section-heading"><h1 class="explore-title">Find your next <em>good thing.</em></h1><span class="location">◎ Presidency neighbourhood<br><small>Illustrative distances</small></span></div><form id="filters"><div class="explore-search"><label class="search"><span aria-hidden="true">⌕</span><input id="query" placeholder="Try camera, cycle, books…" aria-label="Search listings"></label><label>Sort by<select id="sort"><option value="distance">Nearest first</option><option value="price">Price: low to high</option><option value="newest">Newest</option></select></label></div><div class="filter-layout"><aside class="filters"><div class="section-heading"><h3>Make it your own</h3><button type="reset" class="text-btn">Reset</button></div><label>Looking to<select id="mode"><option value="all">Rent, buy or share</option><option value="rent">Rent</option><option value="buy">Buy</option><option value="share">Share for free</option></select></label><label>Category<select id="category"><option value="all">All categories</option></select></label><label>Within <output id="radius-value">5</output> km<input id="radius" type="range" min="1" max="10" step="1" value="5"></label><label>Maximum price (₹)<input id="price" type="number" min="0" placeholder="No limit"></label><p class="micro">Per day for rentals · total for purchases · shares are free</p><label class="check"><input id="verified" type="checkbox"> Email verified owners</label><label class="check"><input id="saved" type="checkbox"> Only saved items</label><div class="filter-note">↗<h3>A little trust goes a long way.</h3><p>A badge tells you what was checked, never guarantees a safe transaction.</p></div></aside><div><div class="results-bar"><p id="result-count" role="status"></p><span class="micro">Local pickup · INR</span></div><div id="results" class="grid explore-grid"></div><div id="empty" class="empty" hidden><span>⌕</span><h2>No finds just yet.</h2><p>Try a wider radius or clear a filter.</p><button type="reset" class="button">Clear filters</button></div></div></div></form></section></main>
-<footer class="wrap"><a class="logo" href="#home">DormMart ✳</a><p>Good things deserve another chapter.</p><button id="requests-button" class="text-btn">My demo requests</button><small>Built for nearby. Open to everyone.</small></footer><dialog id="modal" aria-labelledby="modal-title"><button class="close" aria-label="Close dialog">×</button><div id="modal-body"></div></dialog><div id="toast" role="status" class="toast" hidden></div></body></html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#edece6">
+  <meta name="description" content="DormMart — rent, buy and share useful things nearby. Interactive demo.">
+  <title>DormMart — Good things, closer.</title>
+  <link rel="stylesheet" href="styles.css?v=2">
+  <script src="data.js?v=2" defer></script>
+  <script src="app.js?v=2" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <div class="demo">
+    A little preview of a more circular campus. <strong>Demo · no real transactions</strong>
+  </div>
+
+  <header class="header wrap">
+    <a href="#home" class="logo" aria-label="DormMart home">
+      <span class="brand-icon">d.</span>DormMart<span class="logo-dot">✳</span>
+    </a>
+    <nav aria-label="Main">
+      <a href="#home">Home</a>
+      <a href="#explore">Explore</a>
+      <a href="#how">How it works</a>
+    </nav>
+    <div class="header-actions">
+      <button class="text-btn" id="saved-button">♡ Saved <span id="saved-count">0</span></button>
+      <button class="button small" id="list-button">+ List an item</button>
+    </div>
+  </header>
+
+  <main id="main" tabindex="-1">
+    <!-- Home View -->
+    <section id="home-view">
+      <div class="hero wrap">
+        <div class="hero-copy">
+          <p class="eyebrow"><span class="dot"></span> YOUR NEIGHBOURHOOD. YOUR MARKETPLACE.</p>
+          <h1>Big plans.<br>Small budgets.<br><span>Good neighbours.</span></h1>
+          <p class="intro">
+            Rent it for the weekend. Buy it for the semester.<br>
+            Share it with someone around the corner.
+          </p>
+          <form id="hero-search" class="search">
+            <span aria-hidden="true">⌕</span>
+            <input name="query" aria-label="Search nearby items" placeholder="What are you looking for?">
+            <button class="button" type="submit">Find it nearby ↗</button>
+          </form>
+          <p class="micro">◎ Around Presidency University · demo neighbourhood</p>
+          <div class="hero-proof">
+            <span class="avatar">A</span>
+            <span class="avatar orange">R</span>
+            <span class="avatar green">M</span>
+            <span>Less buying new.<br><strong>More making things happen.</strong></span>
+          </div>
+        </div>
+
+        <div class="hero-art" aria-label="Illustrated collection of things to rent, buy and share">
+          <div class="orbit"></div>
+          <span class="art-spark">✳</span>
+          <div class="floating-note">One campus.<br><strong>Endless possibilities.</strong></div>
+          <div class="hero-object camera">
+            <span>📷</span>
+            <div>
+              <small>FOR YOUR NEXT ADVENTURE</small>
+              <strong>Borrow the moment.</strong>
+              <b>From ₹250 / day ↗</b>
+            </div>
+          </div>
+          <div class="hero-object chair">
+            <span>🪑</span>
+            <strong>A new favourite spot.</strong>
+            <small>Pre-loved. Ready for you.</small>
+          </div>
+          <span class="round-sticker">GOOD FINDS<br>GREAT PEOPLE<br>↗</span>
+          <span class="art-caption">A SECOND LIFE LOOKS GOOD ON EVERYTHING.</span>
+        </div>
+      </div>
+
+      <div class="ticker" aria-hidden="true">
+        RENT A LITTLE. <span>✳</span> SAVE A LOT. <span>✳</span> KEEP IT LOCAL. <span>✳</span> PASS IT ON. <span>✳</span> RENT A LITTLE.
+      </div>
+
+      <section class="wrap section">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">THE GOOD STUFF, CLOSE BY</p>
+            <h2>Your next find is right here.</h2>
+          </div>
+          <a class="arrow-link" href="#explore">Explore everything ↗</a>
+        </div>
+        <div class="category-row" id="home-categories"></div>
+        <div id="featured" class="grid"></div>
+      </section>
+
+      <section class="how wrap section" id="how">
+        <div>
+          <p class="eyebrow">LESS FUSS. MORE POSSIBILITIES.</p>
+          <h2>From “I need that”<br>to “got it.”</h2>
+          <a class="button" href="#explore">Find your first thing ↗</a>
+        </div>
+        <ol>
+          <li>
+            <span>01</span>
+            <div>
+              <h3>Find it around you</h3>
+              <p>Explore useful things in your neighbourhood, at a distance that works for you.</p>
+            </div>
+          </li>
+          <li>
+            <span>02</span>
+            <div>
+              <h3>Know who’s on the other side</h3>
+              <p>Check specific verification badges, review counts and item condition.</p>
+            </div>
+          </li>
+          <li>
+            <span>03</span>
+            <div>
+              <h3>Agree, meet, make it yours</h3>
+              <p>Review costs and pickup terms. Rental requests need the owner’s acceptance.</p>
+            </div>
+          </li>
+        </ol>
+      </section>
+    </section>
+
+    <!-- Explore View -->
+    <section id="explore-view" class="wrap section" hidden>
+      <p class="eyebrow">A WORLD OF USEFUL, JUST A WALK AWAY</p>
+      <div class="section-heading">
+        <h1 class="explore-title">Find your next <em>good thing.</em></h1>
+        <span class="location">◎ Presidency neighbourhood<br><small>Illustrative distances</small></span>
+      </div>
+
+      <form id="filters">
+        <div class="explore-search">
+          <label class="search">
+            <span aria-hidden="true">⌕</span>
+            <input id="query" placeholder="Try camera, cycle, books…" aria-label="Search listings">
+            <button type="button" id="clear-search-btn" class="clear-btn" aria-label="Clear search" hidden>×</button>
+          </label>
+          <label>Sort by
+            <select id="sort">
+              <option value="distance">Nearest first</option>
+              <option value="price">Price: low to high</option>
+              <option value="newest">Newest</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="category-row explore-categories" id="explore-categories"></div>
+        <div id="active-filters-bar" class="active-filters-bar" hidden></div>
+
+        <div class="filter-layout">
+          <aside class="filters">
+            <div class="section-heading">
+              <h3>Make it your own</h3>
+              <button type="reset" class="text-btn">Reset</button>
+            </div>
+
+            <label>Looking to
+              <select id="mode">
+                <option value="all">Rent, buy or share</option>
+                <option value="rent">Rent</option>
+                <option value="buy">Buy</option>
+                <option value="share">Share for free</option>
+              </select>
+            </label>
+
+            <label>Category
+              <select id="category">
+                <option value="all">All categories</option>
+              </select>
+            </label>
+
+            <label>Within <output id="radius-value">5</output> km
+              <input id="radius" type="range" min="1" max="10" step="1" value="5">
+            </label>
+
+            <label>Maximum price (₹)
+              <input id="price" type="number" min="0" placeholder="No limit">
+            </label>
+            <p class="micro">Per day for rentals · total for purchases · shares are free</p>
+
+            <label class="check">
+              <input id="verified" type="checkbox"> Email verified owners
+            </label>
+
+            <label class="check">
+              <input id="saved" type="checkbox"> Only saved items
+            </label>
+
+            <div class="filter-note">
+              ↗<h3>A little trust goes a long way.</h3>
+              <p>A badge tells you what was checked, never guarantees a safe transaction.</p>
+            </div>
+          </aside>
+
+          <div>
+            <div class="results-bar">
+              <p id="result-count" role="status"></p>
+              <span class="micro">Local pickup · INR</span>
+            </div>
+            <div id="results" class="grid explore-grid"></div>
+            <div id="empty" class="empty" hidden>
+              <span>⌕</span>
+              <h2>No finds just yet.</h2>
+              <p>Try a wider radius or clear a filter.</p>
+              <button type="reset" class="button">Clear filters</button>
+            </div>
+          </div>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <footer class="wrap">
+    <a class="logo" href="#home">DormMart ✳</a>
+    <p>Good things deserve another chapter.</p>
+    <button id="requests-button" class="text-btn">My demo requests</button>
+    <small>Built for nearby. Open to everyone.</small>
+  </footer>
+
+  <dialog id="modal" aria-labelledby="modal-title">
+    <button class="close" aria-label="Close dialog">×</button>
+    <div id="modal-body"></div>
+  </dialog>
+
+  <div id="toast" role="status" class="toast" hidden></div>
+</body>
+</html>
