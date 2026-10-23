@@ -27,7 +27,7 @@ const path=require('node:path');
   await page.reload();await page.locator('#results').getByRole('link',{name:'Test '+mode,exact:true}).click();
   await page.locator('#modal[open]').waitFor();assert.ok(!(await page.locator('#modal-body').innerText()).includes('Private demo address 42'));
   await page.locator('.close').click();await page.locator('#account-button').click();await page.locator('#my-listings').click();assert.ok((await page.locator('#modal-body').innerText()).includes('Private demo address 42'));
-  await page.locator('[data-remove-listing]').click();await page.locator('.close').click();
+  await page.locator('[data-remove-listing]').click();await page.locator('#confirm-remove-listing').click();await page.locator('.close').click();
  }
  await page.locator('#list-button').click();await page.locator('#listing-choice').waitFor();
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
