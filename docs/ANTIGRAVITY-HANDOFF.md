@@ -1,3 +1,5 @@
+> Update: demo sign-in, browser-local sell/rent/share listing creation, uploaded photo galleries and sample product photography are now implemented. Earlier phase-one references to these as future work or emoji imagery are historical. Read README.md for the current behavior. No real authentication, payments or multi-user backend exists.
+
 # Stitch → Antigravity → functional vanilla frontend
 
 ## What is ready

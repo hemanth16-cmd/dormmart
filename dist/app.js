@@ -1,3 +1,4 @@
+/* DormMart core application logic */
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
 const money = n => '₹' + Number(n).toLocaleString('en-IN');
@@ -22,31 +23,31 @@ function persist(key, value) {
 
 let saved = readStore('dormmart-saved', []).filter(Number.isInteger);
 let requests = readStore('dormmart-requests', []).filter(x => x && Number.isInteger(x.itemId) && typeof x.id === 'string');
-let customListings = readStore('dormmart-custom-listings', []).filter(x => x && Number.isInteger(x.id));
 let toastTimer;
 
 function toast(message) {
   const el = $('#toast');
+  if (!el) return;
   el.textContent = message;
   el.hidden = false;
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { el.hidden = true; }, 4000);
 }
 
-function getAllListings() {
-  return [...customListings, ...LISTINGS];
-}
-
+// Global category tracking
 function getCategories() {
-  return [...new Set(getAllListings().map(x => x.category))];
+  return [...new Set(LISTINGS.map(x => x.category))];
 }
+var categories = getCategories();
 
 function updateCategoryDropdown() {
-  const currentVal = $('#category').value || 'all';
-  const cats = getCategories();
-  $('#category').innerHTML = '<option value="all">All categories</option>' + cats.map(c => `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`).join('');
-  if (cats.includes(currentVal) || currentVal === 'all') {
-    $('#category').value = currentVal;
+  categories = getCategories();
+  const select = $('#category');
+  if (!select) return;
+  const currentVal = select.value || 'all';
+  select.innerHTML = '<option value="all">All categories</option>' + categories.map(c => `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`).join('');
+  if (categories.includes(currentVal) || currentVal === 'all') {
+    select.value = currentVal;
   }
 }
 
@@ -60,10 +61,13 @@ function renderCategoryChips() {
     </button>
   `;
 
-  $('#home-categories').innerHTML = cats.map(c => {
-    const val = c === 'Everything' ? 'all' : c;
-    return makeChip(c, val === currentCat);
-  }).join('');
+  const homeChips = $('#home-categories');
+  if (homeChips) {
+    homeChips.innerHTML = cats.map(c => {
+      const val = c === 'Everything' ? 'all' : c;
+      return makeChip(c, val === currentCat);
+    }).join('');
+  }
 
   const exploreChips = $('#explore-categories');
   if (exploreChips) {
@@ -74,17 +78,23 @@ function renderCategoryChips() {
   }
 }
 
+function itemPhoto(x, detail = false) {
+  const photos = x.photos && x.photos.length ? x.photos : (x.image ? [x.image] : []);
+  if (photos.length > 0 && photos[0]) {
+    return `<div class="item-art ${detail ? 'detail-art' : ''}"><img src="${escapeHTML(photos[0])}" alt="${escapeHTML(x.title)} — ${x.custom ? 'owner-uploaded photo' : 'representative sample photo'}" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="photo-fallback" hidden>${escapeHTML(x.emoji || 'Photo unavailable')}</span></div>`;
+  }
+  return `<div class="item-art ${detail ? 'detail-art' : ''}" style="--item-color:${escapeHTML(x.color || '#e0e5d9')}" aria-hidden="true"><span>${escapeHTML(x.emoji || '📦')}</span></div>`;
+}
+
 function card(x) {
   const isSaved = saved.includes(x.id);
-  const badgeText = x.isCustom ? 'YOUR LISTING' : x.mode === 'share' ? 'FREE TO SHARE' : x.mode === 'rent' ? 'FOR RENT' : 'FOR SALE';
-  const badgeClass = x.isCustom ? 'mode-badge user-badge' : 'mode-badge';
+  const badgeText = x.custom ? 'YOUR LISTING' : x.mode === 'share' ? 'FREE TO SHARE' : x.mode === 'rent' ? 'FOR RENT' : 'FOR SALE';
+  const badgeClass = x.custom ? 'mode-badge user-badge' : 'mode-badge';
   const modeSub = x.mode === 'rent' ? '/ day' : x.mode === 'share' ? 'to borrow' : 'to keep';
 
   return `
     <article class="card">
-      <div class="item-art" style="--item-color:${escapeHTML(x.color || '#e0e5d9')}" aria-hidden="true">
-        <span>${escapeHTML(x.emoji || '📦')}</span>
-      </div>
+      ${itemPhoto(x)}
       <span class="${badgeClass}">${badgeText}</span>
       <button type="button" class="save" data-save="${x.id}" aria-label="Save ${escapeHTML(x.title)}" aria-pressed="${isSaved}">
         ${isSaved ? '♥' : '♡'}
@@ -92,15 +102,16 @@ function card(x) {
       <div class="card-body">
         <div class="card-meta">
           <span>${escapeHTML(x.category)}</span>
-          <span>◎ ${x.distance} km away</span>
+          <span>◎ ${x.custom ? 'Your listing' : x.distance + ' km away'}</span>
         </div>
         <h3><a class="card-link" href="#item-${x.id}">${escapeHTML(x.title)}</a></h3>
+        <span class="condition-badge">${escapeHTML(x.condition || 'Good')}</span>
         <div class="card-price">
           ${x.price ? money(x.price) : 'Free'} <small>${modeSub}</small>
         </div>
         <div class="seller">
           <span>${escapeHTML(x.owner)} ${x.verified ? '<span class="verified">✓ Email verified</span>' : ''}</span>
-          <span>${x.reviews ? '★ ' + x.rating + ' (' + x.reviews + ')' : '★ New (0)'}</span>
+          <span>${x.reviews ? '★ ' + x.rating + ' (' + x.reviews + ')' : 'No reviews'}</span>
         </div>
       </div>
     </article>
@@ -159,8 +170,7 @@ function renderActiveFiltersBar(f) {
 
 function render() {
   const f = filters();
-  const all = getAllListings();
-  const items = filterListings(all, f, saved);
+  const items = filterListings(LISTINGS, f, saved);
 
   $('#results').innerHTML = items.map(card).join('');
   $('#result-count').textContent = `${items.length} ${items.length === 1 ? 'find' : 'finds'} nearby`;
@@ -177,7 +187,7 @@ function render() {
   renderActiveFiltersBar(f);
 
   // Home featured items
-  $('#featured').innerHTML = all.slice(0, 4).map(card).join('');
+  $('#featured').innerHTML = LISTINGS.slice(0, 4).map(card).join('');
 }
 
 // Filter listeners
@@ -294,26 +304,25 @@ function nextDate() {
 
 // Item detail modal
 function openItem(id) {
-  const x = getAllListings().find(item => item.id === id);
+  const x = LISTINGS.find(item => item.id === id);
   if (!x) return;
 
   const rental = x.mode === 'rent';
   const borrow = x.mode !== 'buy';
-  const isCustom = Boolean(x.isCustom);
 
   showModal(`
     <p class="eyebrow">${escapeHTML(x.category)} · ${escapeHTML(x.condition || 'Good')}</p>
     <h2 id="modal-title">${escapeHTML(x.title)}</h2>
 
-    <div class="item-art detail-art" style="--item-color:${escapeHTML(x.color || '#e0e5d9')}" aria-hidden="true">
-      <span>${escapeHTML(x.emoji || '📦')}</span>
-    </div>
+    ${itemPhoto(x, true)}
+    ${x.photos?.length > 1 ? `<div class="detail-gallery">${x.photos.slice(1).map((p, i) => `<img src="${escapeHTML(p)}" alt="${escapeHTML(x.title)} photo ${i + 2}">`).join('')}</div>` : ''}
+    <p class="micro">${x.custom ? 'Owner-uploaded photos. Condition is self-reported.' : 'Representative sample photo, not evidence of this specific item’s condition.'}</p>
 
     <div class="trust-badges-row">
       ${x.verified ? '<span class="badge-chip badge-email">✓ Email verified</span>' : '<span class="badge-chip">Email not verified</span>'}
       ${x.student ? '<span class="badge-chip badge-student">🎓 Student affiliation reviewed</span>' : ''}
       <span class="badge-chip badge-condition">Condition: ${escapeHTML(x.condition || 'Good')}</span>
-      <span class="badge-chip badge-pickup">◎ ${x.pickupSpot ? escapeHTML(x.pickupSpot) : 'Campus Gate pickup'}</span>
+      <span class="badge-chip badge-pickup">◎ ${x.area ? escapeHTML(x.area) : x.pickupSpot ? escapeHTML(x.pickupSpot) : 'Campus main gate'}</span>
     </div>
 
     <p>${escapeHTML(x.description)}</p>
@@ -321,7 +330,7 @@ function openItem(id) {
     <div class="trust-passport">
       <h4>🛡 Campus Trust & Safety Notes</h4>
       <p>
-        <strong>${escapeHTML(x.owner)}</strong> is located ~${x.distance} km away · ${x.reviews ? '★ ' + x.rating + ' from ' + x.reviews + ' demo reviews' : '★ First time listing'}.
+        <strong>${escapeHTML(x.owner)}</strong> · ${x.custom ? 'Your listing' : x.distance + ' km away'} · ${x.reviews ? '★ ' + x.rating + ' (' + x.reviews + ' reviews)' : 'No reviews yet'}.
         <br>All meetups take place at designated public campus spots during daylight. Never transfer an original identity card or passport as collateral.
       </p>
     </div>
@@ -351,7 +360,7 @@ function openItem(id) {
 
       <p class="notice">
         ${rental ? 'Deposit return follows confirmed return and condition review. A guarantor is only a proposed alternative, subject to owner approval. ' : ''}
-        Pickup arranged at the campus main gate after agreement. No private address is shared.
+        Pickup arranged at ${escapeHTML(x.area || x.pickupSpot || 'the campus main gate')} after agreement. No exact home address is shared.
         ${borrow ? 'Requests do not reserve dates until owner accepts.' : 'Purchase interest does not reserve the item.'}
       </p>
 
@@ -366,27 +375,8 @@ function openItem(id) {
       <p class="micro">
         ${borrow ? '1–' + (rental ? '30' : '7') + ' days · minimum one full day · zero platform fees in this demo' : 'Owner confirmation is required before arranging pickup.'}
       </p>
-
-      ${isCustom ? `
-        <div style="margin-top:16px; border-top:1px solid var(--line); padding-top:12px; text-align:right;">
-          <button type="button" class="text-btn" id="delete-custom-listing" style="color:#b3261e;">🗑 Delete my listing</button>
-        </div>
-      ` : ''}
     </form>
   `);
-
-  if (isCustom) {
-    $('#delete-custom-listing')?.addEventListener('click', () => {
-      if (confirm(`Remove "${x.title}" from your published listings?`)) {
-        customListings = customListings.filter(item => item.id !== x.id);
-        persist('dormmart-custom-listings', customListings);
-        closeModal();
-        updateCategoryDropdown();
-        render();
-        toast('Listing removed.');
-      }
-    });
-  }
 
   const form = $('#booking-form');
   function quote() {
@@ -453,239 +443,14 @@ function openItem(id) {
   };
 }
 
-// "List an item" flow
-$('#list-button').onclick = () => {
-  let selectedEmoji = '📷';
-  let selectedColor = '#dce2d3';
-
-  showModal(`
-    <p class="eyebrow">LEND · SELL · SHARE</p>
-    <h2 id="modal-title">List an item for your campus neighbours</h2>
-    <p class="micro">Give something useful a next chapter. No listing fees, verified campus pickup.</p>
-
-    <form class="create-form" id="create-item-form">
-      <div class="form-row">
-        <label>Listing type
-          <select name="mode" id="new-item-mode" required>
-            <option value="rent">For Rent (daily fee + deposit)</option>
-            <option value="buy">For Sale (one-time buy)</option>
-            <option value="share">Free Share (community lending)</option>
-          </select>
-        </label>
-        <label>Category
-          <select name="category" id="new-item-category" required>
-            <option value="Electronics">Electronics</option>
-            <option value="Furniture">Furniture</option>
-            <option value="Outdoors">Outdoors</option>
-            <option value="Books">Books</option>
-            <option value="Music">Music</option>
-            <option value="Study">Study Supplies</option>
-            <option value="Kitchen">Kitchen & Dorm</option>
-          </select>
-        </label>
-      </div>
-
-      <label>Item Title
-        <input name="title" required placeholder="e.g. TI-84 Plus CE Calculator or Standing Fan" maxlength="60">
-      </label>
-
-      <div class="form-row" id="price-fields">
-        <label id="price-label">Price (₹ / day)
-          <input type="number" name="price" id="new-item-price" min="0" placeholder="e.g. 150" required value="120">
-        </label>
-        <label id="deposit-label">Refundable deposit (₹)
-          <input type="number" name="deposit" id="new-item-deposit" min="0" placeholder="e.g. 500" value="500">
-        </label>
-      </div>
-
-      <div id="guarantor-group">
-        <label class="check">
-          <input type="checkbox" name="alternative" id="new-item-alternative" checked>
-          Allow guarantor alternative instead of cash deposit
-        </label>
-      </div>
-
-      <div class="form-row">
-        <label>Condition
-          <select name="condition" required>
-            <option value="Like new">Like new</option>
-            <option value="Excellent" selected>Excellent</option>
-            <option value="Good">Good</option>
-            <option value="Fair">Fair</option>
-          </select>
-        </label>
-        <label>Pickup proximity
-          <select name="distance">
-            <option value="0.3">0.3 km (North Hostel Block)</option>
-            <option value="0.6" selected>0.6 km (Campus Main Gate)</option>
-            <option value="1.2">1.2 km (Central Library)</option>
-            <option value="2.5">2.5 km (Presidency Neighbourhood)</option>
-          </select>
-        </label>
-      </div>
-
-      <label>Card artwork & color
-        <div class="art-picker">
-          <div class="emoji-picker" id="emoji-picker">
-            <button type="button" class="emoji-opt selected" data-emoji="📷">📷</button>
-            <button type="button" class="emoji-opt" data-emoji="🪑">🪑</button>
-            <button type="button" class="emoji-opt" data-emoji="🚲">🚲</button>
-            <button type="button" class="emoji-opt" data-emoji="📚">📚</button>
-            <button type="button" class="emoji-opt" data-emoji="🎸">🎸</button>
-            <button type="button" class="emoji-opt" data-emoji="🧮">🧮</button>
-            <button type="button" class="emoji-opt" data-emoji="🏸">🏸</button>
-            <button type="button" class="emoji-opt" data-emoji="💡">💡</button>
-            <button type="button" class="emoji-opt" data-emoji="⛺">⛺</button>
-            <button type="button" class="emoji-opt" data-emoji="🎒">🎒</button>
-            <button type="button" class="emoji-opt" data-emoji="🎧">🎧</button>
-            <button type="button" class="emoji-opt" data-emoji="🛹">🛹</button>
-          </div>
-          <div class="color-picker" id="color-picker">
-            <button type="button" class="color-opt selected" data-color="#dce2d3" style="background:#dce2d3" title="Sage Green"></button>
-            <button type="button" class="color-opt" data-color="#f0d5ba" style="background:#f0d5ba" title="Peach"></button>
-            <button type="button" class="color-opt" data-color="#dce4eb" style="background:#dce4eb" title="Sky Blue"></button>
-            <button type="button" class="color-opt" data-color="#e9dfcc" style="background:#e9dfcc" title="Warm Sand"></button>
-            <button type="button" class="color-opt" data-color="#ead4c7" style="background:#ead4c7" title="Terracotta"></button>
-            <button type="button" class="color-opt" data-color="#efdfbd" style="background:#efdfbd" title="Butter"></button>
-          </div>
-        </div>
-      </label>
-
-      <label>Description & notes
-        <textarea name="description" rows="3" required placeholder="Describe what is included, any cables or accessories, and preferred pickup hours." maxlength="250">Well-maintained and ready for use. Available for handover at the campus gate.</textarea>
-      </label>
-
-      <div class="form-row">
-        <label>Your display name
-          <input name="owner" required placeholder="e.g. Priya S." value="Priya (Student)">
-        </label>
-        <label>Pickup meetup spot
-          <input name="pickupSpot" placeholder="e.g. Main Gate 1" value="Campus Main Gate">
-        </label>
-      </div>
-
-      <div class="trust-checks">
-        <label class="check">
-          <input type="checkbox" name="verified" checked>
-          Display "✓ Email verified" badge
-        </label>
-        <label class="check">
-          <input type="checkbox" name="student" checked>
-          Display "🎓 Student affiliation reviewed" badge
-        </label>
-      </div>
-
-      <div class="notice">
-        <strong>Demo notice:</strong> Your listing will be published locally into this browser demo. It will immediately appear on Home and Explore.
-      </div>
-
-      <div class="form-actions">
-        <button type="button" class="text-btn" id="cancel-create-btn">Cancel</button>
-        <button type="submit" class="button">Publish listing ↗</button>
-      </div>
-    </form>
-  `);
-
-  $('#cancel-create-btn')?.addEventListener('click', closeModal);
-
-  // Dynamic price labels based on mode
-  const modeSelect = $('#new-item-mode');
-  const priceLabel = $('#price-label');
-  const depositLabel = $('#deposit-label');
-  const guarantorGroup = $('#guarantor-group');
-  const priceInput = $('#new-item-price');
-  const depositInput = $('#new-item-deposit');
-
-  modeSelect.addEventListener('change', () => {
-    const m = modeSelect.value;
-    if (m === 'rent') {
-      priceLabel.innerHTML = 'Price (₹ / day) <input type="number" name="price" id="new-item-price" min="0" placeholder="e.g. 150" required value="120">';
-      depositLabel.style.display = 'block';
-      guarantorGroup.style.display = 'block';
-      depositInput.value = '500';
-    } else if (m === 'buy') {
-      priceLabel.innerHTML = 'Total price (₹) <input type="number" name="price" id="new-item-price" min="0" placeholder="e.g. 800" required value="500">';
-      depositLabel.style.display = 'none';
-      guarantorGroup.style.display = 'none';
-      depositInput.value = '0';
-    } else {
-      priceLabel.innerHTML = 'Community Sharing <input type="number" name="price" id="new-item-price" value="0" readonly>';
-      depositLabel.style.display = 'none';
-      guarantorGroup.style.display = 'none';
-      depositInput.value = '0';
-    }
-  });
-
-  // Emoji picker
-  $('#emoji-picker').addEventListener('click', e => {
-    const btn = e.target.closest('.emoji-opt');
-    if (!btn) return;
-    $$('#emoji-picker .emoji-opt').forEach(el => el.classList.remove('selected'));
-    btn.classList.add('selected');
-    selectedEmoji = btn.dataset.emoji;
-  });
-
-  // Color picker
-  $('#color-picker').addEventListener('click', e => {
-    const btn = e.target.closest('.color-opt');
-    if (!btn) return;
-    $$('#color-picker .color-opt').forEach(el => el.classList.remove('selected'));
-    btn.classList.add('selected');
-    selectedColor = btn.dataset.color;
-  });
-
-  // Form submission
-  $('#create-item-form').onsubmit = e => {
-    e.preventDefault();
-    const data = new FormData(e.target);
-    const m = data.get('mode');
-
-    const newListing = {
-      id: Date.now(),
-      title: data.get('title').trim(),
-      category: data.get('category'),
-      mode: m,
-      price: m === 'share' ? 0 : Number(data.get('price')) || 0,
-      deposit: m === 'rent' ? Number(data.get('deposit')) || 0 : 0,
-      distance: Number(data.get('distance')) || 0.5,
-      owner: data.get('owner').trim() || 'Student',
-      verified: data.get('verified') === 'on',
-      student: data.get('student') === 'on',
-      reviews: 0,
-      rating: null,
-      emoji: selectedEmoji,
-      color: selectedColor,
-      condition: data.get('condition'),
-      description: data.get('description').trim(),
-      alternative: m === 'rent' && data.get('alternative') === 'on',
-      pickupSpot: data.get('pickupSpot').trim() || 'Campus Main Gate',
-      isCustom: true
-    };
-
-    customListings.unshift(newListing);
-    persist('dormmart-custom-listings', customListings);
-
-    updateCategoryDropdown();
-    render();
-    closeModal();
-    toast(`Published "${newListing.title}" to DormMart!`);
-
-    // Jump to the item
-    setTimeout(() => {
-      openItem(newListing.id);
-    }, 200);
-  };
-};
-
 // "My demo requests" modal
 $('#requests-button').onclick = () => {
-  const all = getAllListings();
   showModal(`
     <p class="eyebrow">SAVED IN THIS BROWSER</p>
     <h2 id="modal-title">Your demo requests</h2>
     ${requests.length ? `
       ${requests.map(r => {
-        const x = all.find(item => item.id === r.itemId);
+        const x = LISTINGS.find(item => item.id === r.itemId);
         const isPending = r.status === 'Pending owner acceptance';
         const isAccepted = r.status === 'Accepted by owner';
         const statusClass = isAccepted ? 'status-accepted' : isPending ? 'status-pending' : 'status-cancelled';
@@ -693,7 +458,7 @@ $('#requests-button').onclick = () => {
         return `
           <article class="request">
             <div class="request-header">
-              <h3>${x ? escapeHTML(x.emoji + ' ' + x.title) : 'Item #' + r.itemId}</h3>
+              <h3>${escapeHTML(x?.title || r.itemTitle || 'Item #' + r.itemId)}</h3>
               <span class="status-pill ${statusClass}">${escapeHTML(r.status)}</span>
             </div>
             <p class="micro">
@@ -705,7 +470,7 @@ $('#requests-button').onclick = () => {
 
             ${isAccepted ? `
               <div class="accepted-box">
-                <strong>✓ Meetup Confirmed:</strong> Meet ${escapeHTML(x?.owner || 'owner')} tomorrow at ${escapeHTML(x?.pickupSpot || 'Campus Main Gate')}. Inspect the item before exchanging security.
+                <strong>✓ Meetup Confirmed:</strong> Meet ${escapeHTML(x?.owner || 'owner')} tomorrow at ${escapeHTML(x?.area || x?.pickupSpot || 'Campus Main Gate')}. Inspect the item before exchanging security.
               </div>
             ` : ''}
 
@@ -721,7 +486,7 @@ $('#requests-button').onclick = () => {
       <div style="text-align:right; margin-top:16px;">
         <button type="button" class="text-btn" id="clear-requests-btn">Clear demo request history</button>
       </div>
-    ` : '<p>No requests yet. Explore the campus catalogue and try sending a demo booking request.</p>'}
+    ` : '<p>No requests yet. Find something you love in Explore.</p>'}
   `);
 
   $('#clear-requests-btn')?.addEventListener('click', () => {
@@ -762,6 +527,11 @@ $('#modal-body').addEventListener('click', e => {
 
 // Routing
 function route() {
+  if (document.body.classList.contains('signed-out')) {
+    if ($('#modal').open) closeModal();
+    return;
+  }
+
   const hash = location.hash || '#home';
   if (hash.startsWith('#item-')) {
     openItem(Number(hash.slice(6)));

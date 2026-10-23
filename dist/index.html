@@ -6,11 +6,12 @@
   <meta name="theme-color" content="#edece6">
   <meta name="description" content="DormMart — rent, buy and share useful things nearby. Interactive demo.">
   <title>DormMart — Good things, closer.</title>
-  <link rel="stylesheet" href="styles.css?v=2">
-  <script src="data.js?v=2" defer></script>
-  <script src="app.js?v=2" defer></script>
+  <link rel="stylesheet" href="styles.css">
+  <script src="data.js" defer></script>
+  <script src="app.js" defer></script>
+  <script src="demo.js" defer></script>
 </head>
-<body>
+<body class="signed-out">
   <a class="skip" href="#main">Skip to content</a>
 
   <div class="demo">
@@ -27,10 +28,45 @@
       <a href="#how">How it works</a>
     </nav>
     <div class="header-actions">
+      <button class="text-btn" id="account-button">Demo account</button>
       <button class="text-btn" id="saved-button">♡ Saved <span id="saved-count">0</span></button>
       <button class="button small" id="list-button">+ List an item</button>
     </div>
   </header>
+
+  <!-- Demo Sign-In Screen -->
+  <section id="auth-screen" class="auth-screen wrap">
+    <div class="auth-story">
+      <a class="logo" href="#home">DormMart ✳</a>
+      <p class="eyebrow">YOUR NEXT CHAPTER STARTS NEARBY</p>
+      <h1>Less stuff.<br>More <span>possibilities.</span></h1>
+      <p>Good finds, friendly neighbours and a little more room in your budget.</p>
+      <div class="auth-photo">
+        <img src="assets/camera.jpg" alt="Sample camera for the demo marketplace">
+        <span>Borrow the moment. ↗</span>
+      </div>
+    </div>
+    <div class="auth-panel">
+      <p class="eyebrow">COME ON IN</p>
+      <h2>Hello, neighbour.</h2>
+      <p>Your campus marketplace is one step away.</p>
+      <form id="auth-form">
+        <label>Email or phone
+          <input id="demo-contact" type="text" autocomplete="off" required placeholder="Any email or phone for this demo">
+        </label>
+        <label>Password
+          <div class="password-field">
+            <input id="demo-password" type="password" autocomplete="off" required placeholder="Any demo password">
+            <button type="button" id="toggle-password" class="text-btn">Show</button>
+          </div>
+        </label>
+        <button class="button" type="submit">Enter DormMart ↗</button>
+      </form>
+      <p class="notice">
+        Demo sign-in: any non-empty details work. No verification is performed. Your contact details and password are never saved or sent. Use made-up details.
+      </p>
+    </div>
+  </section>
 
   <main id="main" tabindex="-1">
     <!-- Home View -->
@@ -62,7 +98,7 @@
           <span class="art-spark">✳</span>
           <div class="floating-note">One campus.<br><strong>Endless possibilities.</strong></div>
           <div class="hero-object camera">
-            <span>📷</span>
+            <img class="hero-photo" src="assets/camera.jpg" alt="Sample camera">
             <div>
               <small>FOR YOUR NEXT ADVENTURE</small>
               <strong>Borrow the moment.</strong>
@@ -70,7 +106,7 @@
             </div>
           </div>
           <div class="hero-object chair">
-            <span>🪑</span>
+            <img class="hero-photo" src="assets/chair.jpg" alt="Sample chair">
             <strong>A new favourite spot.</strong>
             <small>Pre-loved. Ready for you.</small>
           </div>
@@ -151,7 +187,10 @@
           </label>
         </div>
 
+        <!-- Synchronized category chips on Explore -->
         <div class="category-row explore-categories" id="explore-categories"></div>
+
+        <!-- Removable active filters bar -->
         <div id="active-filters-bar" class="active-filters-bar" hidden></div>
 
         <div class="filter-layout">
