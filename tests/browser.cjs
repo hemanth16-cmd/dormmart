@@ -11,10 +11,10 @@ const path=require('node:path');
  await page.locator('#demo-contact').fill('anything');await page.locator('#demo-password').fill('x');await page.locator('#auth-form button[type=submit]').click();
  await page.locator('#home-view').waitFor({state:'visible'});
  assert.equal(await page.evaluate(()=>JSON.stringify({...localStorage,...sessionStorage}).includes('anything')),false);
- await page.locator('#list-button').click();
+ await page.locator('#list-button').click();await page.locator('[data-listing-mode=buy]').click();
  await page.locator('[name=title]').fill('My demo camera');await page.locator('#listing-form [name=mode]').selectOption('rent');
  await page.locator('[name=price]').fill('99');await page.locator('[name=deposit]').fill('200');await page.locator('textarea[name=description]').fill('Small scratch on base. Lens and buttons work.');await page.locator('[name=area]').fill('North gate');
- await page.locator('[name=photos]').setInputFiles(path.resolve('dist/assets/camera.jpg'));
+ await page.locator('[name=address]').fill('Demo pickup building');await page.locator('[name=city]').fill('Bengaluru');await page.locator('[name=postcode]').fill('560064');await page.locator('[name=photos]').setInputFiles(path.resolve('dist/assets/camera.jpg'));
  await page.locator('#photo-preview img').waitFor();await page.locator('#publish-listing').click();
  await page.locator('#results').getByRole('link',{name:'My demo camera',exact:true}).waitFor();
  await page.reload();await page.locator('#results').getByRole('link',{name:'My demo camera',exact:true}).click();
@@ -25,9 +25,9 @@ const path=require('node:path');
  assert.ok((await page.locator('#modal-body').innerText()).includes('haven’t listed'));
  await page.locator('.close').click();
  for(const mode of ['buy','share']){
- await page.locator('#list-button').click();await page.locator('[name=title]').fill('Demo '+mode);await page.locator('#listing-form [name=mode]').selectOption(mode);
+ await page.locator('#list-button').click();await page.locator('[data-listing-mode=buy]').click();await page.locator('[name=title]').fill('Demo '+mode);await page.locator('#listing-form [name=mode]').selectOption(mode);
  if(mode==='buy')await page.locator('[name=price]').fill('450');
- await page.locator('textarea[name=description]').fill('Good condition, minor wear.');await page.locator('[name=area]').fill('Campus gate');await page.locator('[name=photos]').setInputFiles(path.resolve('dist/assets/chair.jpg'));await page.locator('#photo-preview img').waitFor();await page.locator('#publish-listing').click();await page.locator('#results').getByRole('link',{name:'Demo '+mode,exact:true}).waitFor();
+ await page.locator('textarea[name=description]').fill('Good condition, minor wear.');await page.locator('[name=area]').fill('Campus gate');await page.locator('[name=address]').fill('Demo pickup building');await page.locator('[name=city]').fill('Bengaluru');await page.locator('[name=postcode]').fill('560064');await page.locator('[name=photos]').setInputFiles(path.resolve('dist/assets/chair.jpg'));await page.locator('#photo-preview img').waitFor();await page.locator('#publish-listing').click();await page.locator('#results').getByRole('link',{name:'Demo '+mode,exact:true}).waitFor();
  await page.locator('#account-button').click();await page.locator('#my-listings').click();await page.locator('[data-remove-listing]').click();await page.locator('.close').click();
  }
  for(const width of [390,768,1440]){await page.setViewportSize({width,height:1000});await page.goto('http://127.0.0.1:4174/#home');await page.waitForTimeout(350);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`Home overflow at ${width}`);await page.goto('http://127.0.0.1:4174/#explore');assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`Explore overflow at ${width}`)}
