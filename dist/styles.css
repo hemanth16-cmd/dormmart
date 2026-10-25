@@ -1799,3 +1799,11 @@ dialog::backdrop {
 .listing-mode-card strong,.listing-mode-card small{display:block}.listing-mode-card strong{font-size:18px;margin-bottom:10px}.listing-mode-card small{font-size:12px;line-height:1.6;color:var(--muted)}
 @media(max-width:450px){.listing-mode-options{grid-template-columns:1fr}.listing-mode-card{padding:18px}.listing-mode-card>span{float:left;margin:0 16px 20px 0}}
 @media(prefers-reduced-motion:reduce){.listing-mode-card:hover{transform:none}}
+
+/* Listing photo manager */
+.photo-preview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.photo-tile{min-width:0;padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--beige)}
+.photo-preview .photo-tile img{width:100%;height:100px;object-fit:cover;border-radius:6px}
+.photo-label{display:block;font-size:11px;font-weight:700;margin:8px 0;color:var(--blue)}
+.photo-tile .text-btn{display:block;min-height:40px;width:100%;text-align:left;font-size:11px;padding:8px 0}
+@media(max-width:450px){.photo-preview{grid-template-columns:repeat(2,minmax(0,1fr))}}
