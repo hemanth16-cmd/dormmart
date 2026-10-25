@@ -1,4 +1,4 @@
-function listingStatusText(x){return x.status==='sold'?'Sold':x.status==='rented'?(x.mode==='share'?'On loan':'Rented out'):'Available'}
+function listingStatusText(x){if(dateRangeValid(x.blockedFrom,x.blockedUntil))return localDate()>=x.blockedFrom&&localDate()<x.blockedUntil?'Rented out':'Available (see dates)';return x.status==='sold'?'Sold':x.status==='rented'?(x.mode==='share'?'On loan':'Rented out'):'Available'}
 /* DormMart core application logic */
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
@@ -283,6 +283,7 @@ function closeModal() {
   $('#modal').close();
   if (location.hash.startsWith('#item-')) {
     history.replaceState(null, '', '#' + lastPage);
+    route();
   }
   returnFocus?.focus();
 }
@@ -327,6 +328,7 @@ function openItem(id) {
     </div>
 
     <p>${escapeHTML(x.description)}</p>
+    ${!x.custom ? `<button type="button" class="button outline" data-message-item="${x.id}">Message ${escapeHTML(x.owner)}</button>` : '<a class="arrow-link" href="#profile">Manage this item in My profile ↗</a>'}
 
     <div class="trust-passport">
       <h4>🛡 Campus Trust & Safety Notes</h4>
@@ -336,7 +338,7 @@ function openItem(id) {
       </p>
     </div>
 
-    <p class="notice">Availability: ${listingStatusText(x)}${x.status&&x.status!=='available'?'. This item is currently unavailable.':''}</p><form class="detail-form" id="booking-form">
+    <p class="notice">Availability: ${listingStatusText(x)}${listingUnavailable(x)?'. This item is currently unavailable.':''}</p>${availabilityDatesHTML(x)}<form class="detail-form" id="booking-form">
       ${borrow ? `
         <div class="detail-grid">
           <label>Pickup date
@@ -369,7 +371,7 @@ function openItem(id) {
         <input type="checkbox" required> I understand this is a demo request; no payment is collected.
       </label>
 
-      <button class="button" type="submit" ${x.status&&x.status!=='available'?'disabled':''}>
+      <button class="button" type="submit" ${listingUnavailable(x)?'disabled':''}>
         ${x.mode === 'buy' ? 'Send purchase interest' : 'Request ' + (rental ? 'rental' : 'to borrow')} ↗
       </button>
 
@@ -383,10 +385,11 @@ function openItem(id) {
   function quote() {
     const data = new FormData(form);
     let days = borrow ? (Date.parse(data.get('end')) - Date.parse(data.get('start'))) / 86400000 : 1;
-    const valid = !borrow || (data.get('start') >= localDate() && Number.isInteger(days) && days >= 1 && days <= (rental ? 30 : 7));
+    const dateError = rentalDateError(x,data.get('start'),data.get('end'),requests);
+    const valid = !dateError && (!borrow || (data.get('start') >= localDate() && Number.isInteger(days) && days >= 1 && days <= (rental ? 30 : 7)));
 
     if (borrow) {
-      form.elements.end.setCustomValidity(valid ? '' : 'Choose a future pickup and a return 1–' + (rental ? 30 : 7) + ' days later.');
+      form.elements.end.setCustomValidity(valid ? '' : dateError || 'Choose a future pickup and a return 1–' + (rental ? 30 : 7) + ' days later.');
     }
 
     const security = data.get('security');
@@ -399,7 +402,7 @@ function openItem(id) {
       <hr>
       Estimated total<strong>${money(q.total)}</strong>
       ${security === 'guarantor' ? '<p class="micro">Conditional estimate: deposit waived only if the owner accepts the guarantor.</p>' : ''}
-    ` : 'Select valid dates to see your estimate.';
+    ` : escapeHTML(dateError || 'Select valid future dates to see your estimate.');
 
     return { valid, days, security, q, data };
   }
@@ -409,7 +412,7 @@ function openItem(id) {
 
   form.onsubmit = e => {
     e.preventDefault();
-    if(x.status&&x.status!=='available'){toast('This item is currently unavailable.');return}const z = quote();
+    if(listingUnavailable(x)){toast('This item is currently unavailable.');return}const z = quote();
     if (!z.valid || !form.reportValidity()) return;
 
     const request = {
@@ -471,7 +474,7 @@ $('#requests-button').onclick = () => {
 
             ${isAccepted ? `
               <div class="accepted-box">
-                <strong>✓ Meetup Confirmed:</strong> Meet ${escapeHTML(x?.owner || 'owner')} tomorrow at ${escapeHTML(x?.area || x?.pickupSpot || 'Campus Main Gate')}. Inspect the item before exchanging security.
+                <strong>✓ Meetup Confirmed:</strong> Meet ${escapeHTML(x?.owner || 'owner')} ${r.start ? 'on '+escapeHTML(r.start) : 'at an agreed time'} at ${escapeHTML(x?.area || x?.pickupSpot || 'Campus Main Gate')}. Inspect the item before exchanging security.
               </div>
             ` : ''}
 
@@ -518,6 +521,10 @@ $('#modal-body').addEventListener('click', e => {
   if (acceptBtn) {
     const r = requests.find(x => x.id === acceptBtn.dataset.simulateAccept);
     if (r) {
+      const item=LISTINGS.find(x=>x.id===r.itemId);
+      if(!item){toast('This listing has been deleted.');return}
+      const dateError=rentalDateError(item,r.start,r.end,requests,r.id);
+      if(dateError||(r.start&&r.start<localDate())){toast(dateError||'These pickup dates have passed. Send a new request.');return}
       r.status = 'Accepted by owner';
       persist('dormmart-requests', requests);
       $('#requests-button').click();
@@ -534,6 +541,7 @@ function route() {
   }
 
   const hash = location.hash || '#home';
+  if(window.renderCommunityRoute && renderCommunityRoute(hash))return;
   if (hash.startsWith('#item-')) {
     openItem(Number(hash.slice(6)));
     return;
@@ -566,3 +574,12 @@ window.addEventListener('hashchange', route);
 updateCategoryDropdown();
 render();
 route();
+
+function availabilityDatesHTML(item){
+ if(item.mode==='buy')return '';
+ const ranges=[];
+ if(dateRangeValid(item.availableFrom,item.availableUntil))ranges.push('Pickup from '+item.availableFrom+' · return by '+item.availableUntil);
+ if(dateRangeValid(item.blockedFrom,item.blockedUntil))ranges.push('Unavailable from '+item.blockedFrom+' · available again '+item.blockedUntil);
+ for(const r of requests.filter(r=>r.itemId===item.id&&r.status==='Accepted by owner'&&dateRangeValid(r.start,r.end)))ranges.push('Booked from '+r.start+' · available again '+r.end);
+ return ranges.map(text=>'<p class="notice">'+escapeHTML(text)+'</p>').join('');
+}

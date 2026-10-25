@@ -14,3 +14,21 @@ LISTINGS.forEach((item,index)=>item.image='assets/'+['camera', 'chair', 'cycle',
 function filterListings(items, filters, savedIds=[]){return items.filter(x=>(filters.mode==='all'||x.mode===filters.mode)&&(filters.category==='all'||x.category===filters.category)&&x.distance<=filters.radius&&(filters.price===''||x.price<=Number(filters.price))&&(!filters.verified||x.verified)&&(!filters.saved||savedIds.includes(x.id))&&(x.title+' '+x.category+' '+x.description).toLowerCase().includes(filters.query.trim().toLowerCase())).sort((a,b)=>filters.sort==='price'?a.price-b.price:filters.sort==='newest'?b.id-a.id:a.distance-b.distance)}
 function calculateQuote(item,days,security){const fee=item.mode==='rent'?item.price*days:item.price;const deposit=item.mode==='rent'&&security!=='guarantor'?item.deposit:0;return {fee,deposit,total:fee+deposit}}
 if(typeof module!=='undefined')module.exports={LISTINGS,filterListings,calculateQuote};
+
+// Dates use [pickup, return): an item can be picked up again on its return date.
+function validDate(value) {
+ return typeof value==='string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0,10)===value;
+}
+function dateRangeValid(start,end){return validDate(start)&&validDate(end)&&start<end}
+function listingUnavailable(item){return item.status==='sold'||(item.status==='rented'&&!dateRangeValid(item.blockedFrom,item.blockedUntil))}
+function rentalDateError(item,start,end,bookings=[],excludeId){
+ if(listingUnavailable(item))return 'This item is currently unavailable.';
+ if(item.mode==='buy')return '';
+ if(!dateRangeValid(start,end))return 'Choose a return date after the pickup date.';
+ if((item.availableFrom&&start<item.availableFrom)||(item.availableUntil&&end>item.availableUntil))return 'Choose dates within the owner’s availability window.';
+ const overlaps=(a,b)=>dateRangeValid(a,b)&&start<b&&end>a;
+ if(overlaps(item.blockedFrom,item.blockedUntil))return 'This item is already rented or on loan during those dates.';
+ if(bookings.some(r=>r.itemId===item.id&&r.id!==excludeId&&r.status==='Accepted by owner'&&overlaps(r.start,r.end)))return 'Those dates overlap an accepted booking. Choose different dates.';
+ return '';
+}
+if(typeof module!=='undefined')Object.assign(module.exports,{validDate,dateRangeValid,listingUnavailable,rentalDateError});
