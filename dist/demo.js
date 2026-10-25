@@ -7,7 +7,7 @@ function syncAuth() {
   document.body.classList.toggle('signed-out', !demoSignedIn);
   $('#auth-screen').hidden = demoSignedIn;
   for (const selector of ['.header', '#main', 'footer']) $(selector).hidden = !demoSignedIn;
-  $('#account-button').textContent = 'My profile';
+  $('#account-button .profile-nav-label').textContent = 'My profile';
 }
 $('#auth-form').onsubmit = e => {
   e.preventDefault();

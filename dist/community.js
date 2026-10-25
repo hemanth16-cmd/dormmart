@@ -17,6 +17,7 @@ function refreshProfile(){
 }
 function renderCommunityRoute(hash){
  if(hash.startsWith('#item-'))return false;
+ if(hash==='#profile')$('#account-button').setAttribute('aria-current','page');else $('#account-button').removeAttribute('aria-current');
  const isProfile=hash==='#profile',isMessages=hash==='#messages'||hash.startsWith('#messages-');
  $('#profile-view').hidden=!isProfile;$('#messages-view').hidden=!isMessages;
  if(!isProfile&&!isMessages)return false;

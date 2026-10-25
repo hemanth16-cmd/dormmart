@@ -1817,3 +1817,25 @@ dialog::backdrop {
 @media(prefers-reduced-motion:reduce){.owned-card,.message-bubble{animation:none}}
 
 .pickup-details{font-size:12px;line-height:1.7;margin:14px 0;overflow-wrap:anywhere}.pickup-details summary{cursor:pointer;color:var(--blue);font-weight:700}.profile-panel input{width:100%;min-width:0}.profile-panel label{display:grid;gap:8px}
+
+/* Soft capsule navigation with a distinct personal space. */
+.header{gap:20px;padding-block:22px}
+.header nav{display:flex;gap:5px;padding:6px;border:1px solid #d5d7cb;border-radius:999px;background:#f7f7f0;box-shadow:0 4px 16px #20292305}
+.header nav .nav-pill{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:11px 17px;border-radius:999px;font-size:13px;font-weight:700;color:#62665e;text-decoration:none;transition:background .18s,color .18s,box-shadow .18s,transform .18s}
+.nav-icon{width:18px;height:18px;flex-shrink:0}
+.header nav .nav-pill:hover{background:#e7ebfa;color:var(--blue);transform:translateY(-1px)}
+.header nav .nav-pill[aria-current="page"]{background:var(--blue);color:#fff;text-decoration:none;box-shadow:0 4px 10px #1546d926}
+.header-actions{gap:14px}
+#account-button.profile-nav{display:inline-flex;align-items:center;gap:9px;min-height:48px;border:1px solid #d2d8e9;border-radius:999px;padding:5px 13px 5px 5px;background:#f6f7fc;color:var(--blue);font-size:13px;font-weight:700;white-space:nowrap;transition:background .18s,box-shadow .18s,transform .18s}
+.profile-nav-avatar{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#f7dbc1;color:#71350d}
+.profile-nav-arrow{font-size:17px;margin-left:2px}
+#account-button.profile-nav:hover{background:#e9edfc;box-shadow:0 5px 14px #1546d913;transform:translateY(-1px);filter:none}
+#account-button.profile-nav[aria-current="page"]{background:#e2e9ff;border-color:var(--blue);box-shadow:0 0 0 3px #1546d90c}
+.header nav .nav-pill:focus-visible,#account-button.profile-nav:focus-visible{outline:3px solid var(--orange);outline-offset:4px}
+@media(min-width:1001px) and (max-width:1200px){.header{gap:12px}.header nav .nav-pill{padding-inline:12px}.header-actions{gap:9px}.header .logo{font-size:24px}}
+@media(max-width:1000px){.header nav{width:auto;max-width:100%;margin-inline:auto;gap:5px}.header{row-gap:18px}}
+@media(max-width:700px){.header{padding-block:18px}.header-actions{width:100%;justify-content:center;gap:10px}.header nav{width:100%;gap:4px}.header nav .nav-pill{flex:1;padding:11px 8px;font-size:12px;gap:7px}.header nav .nav-icon{width:17px;height:17px}#account-button.profile-nav{font-size:12px;padding-right:10px;gap:7px}.profile-nav-arrow{display:none}.header-actions .button{border-radius:999px;padding:13px 14px}.header-actions #saved-button{font-size:11px}}
+@media(max-width:360px){.header-actions{gap:7px}.header-actions .button{padding-inline:10px}#account-button.profile-nav{font-size:11px}.profile-nav-avatar{width:30px;height:30px}.header nav .nav-pill{gap:5px;padding-inline:6px}}
+@media(prefers-reduced-motion:reduce){.header nav .nav-pill,#account-button.profile-nav{transition:none}.header nav .nav-pill:hover,#account-button.profile-nav:hover{transform:none}}
+
+@media(min-width:1001px) and (max-width:1200px){.header{flex-wrap:wrap;row-gap:16px}.header nav{order:3;width:max-content;margin-inline:auto}.header-actions{margin-left:auto}}
