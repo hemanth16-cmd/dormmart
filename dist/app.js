@@ -94,7 +94,7 @@ function card(x) {
   const modeSub = x.mode === 'rent' ? '/ day' : x.mode === 'share' ? 'to borrow' : 'to keep';
 
   return `
-    <article class="card">
+    <article class="card" data-preview-item="${x.id}">
       ${itemPhoto(x)}
       <span class="${badgeClass}">${badgeText}</span>
       <button type="button" class="save" data-save="${x.id}" aria-label="Save ${escapeHTML(x.title)}" aria-pressed="${isSaved}">
@@ -281,10 +281,7 @@ function showModal(html) {
 
 function closeModal() {
   $('#modal').close();
-  if (location.hash.startsWith('#item-')) {
-    history.replaceState(null, '', '#' + lastPage);
-    route();
-  }
+
   returnFocus?.focus();
 }
 
@@ -304,23 +301,23 @@ function nextDate() {
   return localDate(d);
 }
 
-// Item detail modal
+// Full item detail page
 function openItem(id) {
   const x = LISTINGS.find(item => item.id === id);
-  if (!x) return;
+  if (!x) {showItemContent('<h1 id="item-title">This item is no longer available.</h1><p>It may have been removed from this browser.</p>');return;}
 
   const rental = x.mode === 'rent';
   const borrow = x.mode !== 'buy';
 
-  showModal(`
+  showItemContent(`
     <p class="eyebrow">${escapeHTML(x.category)} · ${escapeHTML(x.condition || 'Good')}</p>
-    <h2 id="modal-title">${escapeHTML(x.title)}</h2>
+    <h1 id="item-title">${escapeHTML(x.title)}</h1>
 
-    ${itemPhoto(x, true)}
+    <div class="item-detail-layout"><div class="item-visual">${itemPhoto(x, true)}
     ${x.photos?.length > 1 ? `<div class="detail-gallery">${x.photos.slice(1).map((p, i) => `<img src="${escapeHTML(p)}" alt="${escapeHTML(x.title)} photo ${i + 2}">`).join('')}</div>` : ''}
     <p class="micro">${x.custom ? 'Owner-uploaded photos. Condition is self-reported.' : 'Representative sample photo, not evidence of this specific item’s condition.'}</p>
 
-    <div class="trust-badges-row">
+    </div><div class="item-info"><div class="item-page-price">${x.price?money(x.price):'Free'} <small>${rental?'/ day':borrow?'to borrow':'one-time price'}</small></div><div class="trust-badges-row">
       ${x.verified ? '<span class="badge-chip badge-email">✓ Email verified</span>' : '<span class="badge-chip">Email not verified</span>'}
       ${x.student ? '<span class="badge-chip badge-student">🎓 Student affiliation reviewed</span>' : ''}
       <span class="badge-chip badge-condition">Condition: ${escapeHTML(x.condition || 'Good')}</span>
@@ -378,7 +375,7 @@ function openItem(id) {
       <p class="micro">
         ${borrow ? '1–' + (rental ? '30' : '7') + ' days · minimum one full day · zero platform fees in this demo' : 'Owner confirmation is required before arranging pickup.'}
       </p>
-    </form>
+    </form></div></div>
   `);
 
   const form = $('#booking-form');
@@ -443,7 +440,7 @@ function openItem(id) {
       </p>
       <button class="button" id="done">Keep exploring ↗</button>
     `);
-    $('#done').onclick = closeModal;
+    $('#done').onclick = ()=>{closeModal();location.hash='explore'};
   };
 }
 
@@ -541,6 +538,7 @@ function route() {
   }
 
   const hash = location.hash || '#home';
+  if(!hash.startsWith('#item-')){$('#item-view').hidden=true;$('#item-view').replaceChildren()}
   if(window.renderCommunityRoute && renderCommunityRoute(hash))return;
   if (hash.startsWith('#item-')) {
     openItem(Number(hash.slice(6)));

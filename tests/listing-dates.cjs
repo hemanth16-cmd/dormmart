@@ -13,7 +13,7 @@ const fs=require('node:fs');
  await f.locator('[name=blockedFrom]').fill('2030-01-10');await f.locator('[name=blockedUntil]').fill('2030-01-09');await page.locator('#publish-listing').click();assert.match(await page.locator('#listing-error').innerText(),/blocked dates/);
  await f.locator('[name=blockedUntil]').fill('2030-01-15');await page.locator('#publish-listing').click();await page.reload();
  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('dormmart-listings-v2'))[0].blockedUntil),'2030-01-15');
- await page.evaluate(()=>openItem(101));assert.match(await page.locator('#modal-body').innerText(),/Unavailable from 2030-01-10/);
+ await page.evaluate(()=>openItem(101));assert.match(await page.locator('#item-view').innerText(),/Unavailable from 2030-01-10/);
  const b=page.locator('#booking-form');await b.locator('[name=start]').fill('2030-01-11');await b.locator('[name=end]').fill('2030-01-14');assert.match(await page.locator('#quote').innerText(),/already rented/);
  await b.locator('[name=start]').fill('2030-01-15');await b.locator('[name=end]').fill('2030-01-17');assert.match(await page.locator('#quote').innerText(),/Estimated total/);
  await b.locator('[type=checkbox]').check();await b.locator('[type=submit]').click();await page.locator('#done').click();await page.locator('#requests-button').click();await page.locator('[data-simulate-accept]').click();assert.match(await page.locator('#modal-body').innerText(),/on 2030-01-15/);
