@@ -26,7 +26,7 @@ const path=require('node:path');
   await page.locator('#results').getByRole('link',{name:'Test '+mode,exact:true}).waitFor();
   await page.reload();await page.locator('#results').getByRole('link',{name:'Test '+mode,exact:true}).click();
   await page.locator('#item-view').waitFor({state:'visible'});assert.ok(!(await page.locator('#item-view').innerText()).includes('Private demo address 42'));
-  await page.evaluate(()=>{if(document.querySelector('#modal').open)closeModal();else{location.hash='explore';route()}});await page.locator('#account-button').click();await page.locator('.pickup-details summary').click();assert.ok((await page.locator('#profile-view').innerText()).includes('Private demo address 42'));
+  await page.evaluate(()=>{if(document.querySelector('#modal').open)closeModal();else{location.hash='explore';route()}});await page.locator('#account-button:visible, .mobile-dock a[href="#profile"]:visible').click();await page.locator('.pickup-details summary').click();assert.ok((await page.locator('#profile-view').innerText()).includes('Private demo address 42'));
   await page.locator('[data-remove-listing]').click();await page.locator('#confirm-remove-listing').click();await page.evaluate(()=>{if(document.querySelector('#modal').open)closeModal();else{location.hash='explore';route()}});
  }
  await page.locator('#list-button').click();await page.locator('#listing-choice').waitFor();

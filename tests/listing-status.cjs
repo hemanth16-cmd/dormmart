@@ -6,7 +6,7 @@ const fs=require('node:fs');
  await page.goto(process.env.DORMMART_URL||'http://127.0.0.1:4176');
  const photo='data:image/jpeg;base64,'+fs.readFileSync('dist/assets/camera.jpg').toString('base64');
  await page.evaluate(photo=>{sessionStorage.setItem('dormmart-demo-session','active');localStorage.setItem('dormmart-listings-v2',JSON.stringify(['buy','rent','share'].map((mode,i)=>({id:101+i,title:'Test '+mode,mode,category:'Electronics',price:mode==='share'?0:100,deposit:200,condition:'Good',description:'Light wear',area:'Campus',photos:[photo],owner:'You (demo)',custom:true,distance:.1,reviews:0}))))},photo);await page.reload();
- async function manage(){await page.locator('#account-button').click();}
+ async function manage(){await page.locator('#account-button:visible, .mobile-dock a[href="#profile"]:visible').click();}
  // Dated rental/share status transitions are covered by listing-dates.cjs.
  for(const [index,mode] of ['buy'].entries()){
   const id=101+index;await manage();assert.equal(await page.locator(`[data-listing-status="${id}"]`).inputValue(),'available');await page.locator(`[data-listing-status="${id}"]`).selectOption(mode==='buy'?'sold':'rented');await page.evaluate(()=>{if(document.querySelector('#modal').open)closeModal();else{location.hash='explore';route()}});await page.goto(`${process.env.DORMMART_URL||'http://127.0.0.1:4176'}/#item-${id}`);await page.locator('#booking-form').waitFor();assert.equal(await page.locator('#booking-form button[type=submit]').isDisabled(),true);

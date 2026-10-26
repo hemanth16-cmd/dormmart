@@ -114,7 +114,7 @@ function card(x) {
           <span>${escapeHTML(x.owner)} ${x.verified ? '<span class="verified">✓ Email verified</span>' : ''}</span>
           <span>${x.reviews ? '★ ' + x.rating + ' (' + x.reviews + ')' : 'No reviews'}</span>
         </div>
-      </div>
+      <button type="button" class="compare-toggle" data-compare="${x.id}" aria-pressed="false" aria-label="Compare ${escapeHTML(x.title)}"><span aria-hidden="true">＋</span> Compare item</button></div>
     </article>
   `;
 }

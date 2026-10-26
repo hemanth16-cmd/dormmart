@@ -6,7 +6,7 @@ const fs=require('node:fs');
  await page.goto(process.env.DORMMART_URL||'http://127.0.0.1:4177');
  const photo='data:image/jpeg;base64,'+fs.readFileSync('dist/assets/camera.jpg').toString('base64');
  await page.evaluate(photo=>{sessionStorage.setItem('dormmart-demo-session','active');localStorage.setItem('dormmart-listings-v2',JSON.stringify([{id:101,title:'Camera <test>',mode:'rent',category:'Electronics',price:100,condition:'Good',description:'Working',area:'Campus',photos:[photo],owner:'You',custom:true,distance:.1,reviews:0}]));localStorage.setItem('dormmart-saved','[101]');localStorage.setItem('dormmart-requests',JSON.stringify([{id:'request-1',itemId:101,status:'Pending owner acceptance'}]))},photo);await page.reload();
- async function manage(){await page.locator('#account-button').click();}
+ async function manage(){await page.locator('#account-button:visible, .mobile-dock a[href="#profile"]:visible').click();}
  const count=()=>page.evaluate(()=>JSON.parse(localStorage.getItem('dormmart-listings-v2')).length);
  await manage();await page.locator('[data-remove-listing]').click();assert.equal(await count(),1);assert.equal(await page.locator('#keep-listing').evaluate(e=>e===document.activeElement),true);assert.ok((await page.locator('#modal-body').innerText()).includes('Camera <test>'));
  await page.locator('#keep-listing').click();assert.equal(await count(),1);await page.locator('[data-remove-listing]').click();await page.keyboard.press('Escape');assert.equal(await count(),1);
