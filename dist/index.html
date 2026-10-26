@@ -6,17 +6,22 @@
   <meta name="theme-color" content="#edece6">
   <meta name="description" content="DormMart — rent, buy and share useful things nearby. Interactive demo.">
   <title>DormMart — Good things, closer.</title>
+  <script src="theme.js"></script>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="motion.css">
+  <link rel="stylesheet" href="theme.css">
   <script src="data.js" defer></script>
   <script src="app.js" defer></script>
   <script src="demo.js" defer></script>
   <script src="community.js" defer></script>
+  <script src="motion.js" defer></script>
 </head>
 <body class="signed-out">
   <a class="skip" href="#main">Skip to content</a>
 
   <div class="demo">
-    A little preview of a more circular campus. <strong>Demo · no real transactions</strong>
+    <span>A little preview of a more circular campus. <strong>Demo · no real transactions</strong></span>
+    <button id="theme-toggle" type="button" aria-pressed="false"><span aria-hidden="true">☾</span> <span class="theme-label">Dark mode</span></button>
   </div>
 
   <header class="header wrap">
@@ -95,7 +100,8 @@
         </div>
 
         <div class="hero-art" aria-label="Illustrated collection of things to rent, buy and share">
-          <div class="orbit"></div>
+          <div class="depth-scene" aria-hidden="true"><span class="depth-halo"></span><span class="depth-ring"></span><span class="depth-orb"></span><span class="depth-cube"><i></i><i></i><i></i></span><span class="depth-floor"></span></div>
+          <div class="orbit" aria-hidden="true"></div>
           <span class="art-spark">✳</span>
           <div class="floating-note">One campus.<br><strong>Endless possibilities.</strong></div>
           <div class="hero-object camera">
@@ -172,6 +178,7 @@
         <span class="location">◎ Presidency neighbourhood<br><small>Illustrative distances</small></span>
       </div>
 
+      <div class="campus-banner"><div><span class="campus-spark" aria-hidden="true">✳</span><div><strong>Big campus energy. Small-budget finds.</strong><p>For your study desk, weekend plans, and everything in between.</p></div></div><span class="campus-tag">RENT · BUY · SHARE</span></div>
       <form id="filters">
         <div class="explore-search">
           <label class="search">
@@ -197,7 +204,7 @@
         <div class="filter-layout">
           <aside class="filters">
             <div class="section-heading">
-              <h3>Make it your own</h3>
+              <h3><span class="filter-heading-icon" aria-hidden="true">☷</span> Make it your own</h3>
               <button type="reset" class="text-btn">Reset</button>
             </div>
 
@@ -264,6 +271,7 @@
     <p>Good things deserve another chapter.</p>
     <button id="requests-button" class="text-btn">My demo requests</button>
     <small>Built for nearby. Open to everyone.</small>
+    <button type="button" id="motion-toggle" class="text-btn" aria-pressed="false" hidden>Motion: off</button>
   </footer>
 
   <dialog id="modal" aria-labelledby="modal-title">
