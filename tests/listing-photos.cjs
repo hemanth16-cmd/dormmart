@@ -7,7 +7,7 @@ const path=require('node:path');
  await page.goto(process.env.DORMMART_URL||'http://127.0.0.1:4178');
  const photos=['camera','chair'].map(n=>'data:image/jpeg;base64,'+fs.readFileSync(`dist/assets/${n}.jpg`).toString('base64'));
  await page.evaluate(photos=>{sessionStorage.setItem('dormmart-demo-session','active');localStorage.setItem('dormmart-listings-v2',JSON.stringify([{id:101,title:'Photo test',mode:'rent',availableFrom:'2026-01-01',availableUntil:'2099-12-31',category:'Electronics',price:100,deposit:200,condition:'Good',description:'Working',area:'Campus',pickupAddress:{address:'Demo gate',city:'Bengaluru',postcode:'560064'},photos,owner:'You',custom:true,distance:.1,reviews:0}]))},photos);await page.reload();
- async function edit(){await page.locator('#account-button').click();await page.locator('[data-edit-listing="101"]').click()}
+ async function edit(){await page.locator('#account-button:visible, .mobile-dock a[href="#profile"]:visible').click();await page.locator('[data-edit-listing="101"]').click()}
  const persisted=()=>page.evaluate(()=>JSON.parse(localStorage.getItem('dormmart-listings-v2'))[0].photos);
  await edit();await page.locator('[data-cover-photo="1"]').click();assert.equal(await page.locator('#photo-preview img').first().getAttribute('src'),photos[1]);await page.evaluate(()=>{if(document.querySelector('#modal').open)closeModal();else{location.hash='explore';route()}});assert.deepEqual(await persisted(),photos);
  await edit();await page.locator('[name=photos]').setInputFiles({name:'bad.txt',mimeType:'text/plain',buffer:Buffer.from('no image')});await page.getByText('Choose JPG, PNG or WebP photos, up to 8 MB each.',{exact:true}).waitFor();assert.equal(await page.locator('#photo-preview img').count(),2);

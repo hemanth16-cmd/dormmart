@@ -6,7 +6,7 @@ const fs=require('node:fs');
  await page.goto(process.env.DORMMART_URL||'http://127.0.0.1:4177');
  const photo='data:image/jpeg;base64,'+fs.readFileSync('dist/assets/camera.jpg').toString('base64');
  await page.evaluate(photo=>{localStorage.clear();sessionStorage.setItem('dormmart-demo-session','active');localStorage.setItem('dormmart-listings-v2',JSON.stringify([{id:101,title:'Date test camera',mode:'rent',category:'Electronics',price:100,deposit:0,condition:'Good',description:'Working',area:'Campus',pickupAddress:{address:'Gate',city:'Bengaluru',postcode:'560001'},photos:[photo],owner:'You',custom:true,distance:.1,reviews:0}]))},photo);await page.reload();
- async function manage(){await page.locator('#account-button').click();}
+ async function manage(){await page.locator('#account-button:visible, .mobile-dock a[href="#profile"]:visible').click();}
  await manage();await page.locator('[data-edit-listing="101"]').click();
  const f=page.locator('#listing-form');
  await f.locator('[name=availableFrom]').fill('2030-01-01');await f.locator('[name=availableUntil]').fill('2030-02-01');await f.locator('[name=hasBlockedDates]').check();
