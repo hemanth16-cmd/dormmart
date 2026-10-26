@@ -8,7 +8,7 @@ await page.locator('.hero-art').hover({position:{x:300,y:180}});await page.waitF
 const before=await page.locator('.camera').evaluate(e=>e.style.getPropertyValue('--drift-x'));await page.locator('.hero-art').hover({position:{x:100,y:320}});await page.waitForFunction(b=>document.querySelector('.camera').style.getPropertyValue('--drift-x')!==b,before);
 await page.locator('.header .logo').hover();await page.waitForFunction(()=>document.querySelector('.camera').style.getPropertyValue('--drift-x')==='');
 await page.screenshot({path:'dark-home.png',animations:'disabled'});
-await page.locator('nav a[href="#explore"]').click();await page.locator('#results .card-link').first().click();await page.locator('#modal[open]').waitFor();await page.screenshot({path:'dark-item.png',animations:'disabled'});await page.locator('.close').click();
+await page.locator('nav a[href="#explore"]').click();await page.locator('#results .card-link').first().click();await page.locator('#item-view').waitFor({state:'visible'});await page.screenshot({path:'dark-item.png',animations:'disabled'});await page.locator('.item-back').click();
 await page.locator('#account-button').click();await page.locator('#profile-view').waitFor({state:'visible'});await page.screenshot({path:'dark-profile.png',animations:'disabled'});
 await page.locator('nav a[href="#messages"]').click();await page.locator('#messages-view').waitFor({state:'visible'});await page.screenshot({path:'dark-messages.png',animations:'disabled'});
 await page.locator('nav a[href="#home"]').click();await page.emulateMedia({reducedMotion:'reduce'});await page.locator('.hero-art').hover();assert.equal(await page.locator('.camera').evaluate(e=>e.style.getPropertyValue('--drift-x')),'');

@@ -7,7 +7,7 @@ assert.equal(await page.locator('.depth-scene').count(),1);assert.equal(await pa
 await page.screenshot({path:'motion-home-desktop.png',animations:'disabled'});
 await page.locator('nav a[href="#explore"]').click();const card=page.locator('#results .card').first();await card.scrollIntoViewIfNeeded();await card.hover({position:{x:30,y:60}});await page.waitForFunction(()=>document.querySelector('#results .card').classList.contains('is-tilting'));
 assert.notEqual(await card.evaluate(e=>getComputedStyle(e).transform),'none');await card.locator('[data-save]').click();assert.equal(await page.locator('#saved-count').innerText(),'1');
-await page.locator('#results .card-link').first().click();await page.locator('#modal[open]').waitFor();await page.locator('.close').click();
+await page.locator('#results .card-link').first().click();await page.locator('#item-view').waitFor({state:'visible'});await page.locator('.item-back').click();
 await page.locator('#motion-toggle').click();assert.equal(await page.locator('#motion-toggle').getAttribute('aria-pressed'),'false');await page.reload();assert.equal(await page.locator('#motion-toggle').getAttribute('aria-pressed'),'false');assert.equal(await page.locator('.hero-object.camera').evaluate(e=>getComputedStyle(e).animationName),'none');
 await page.locator('#motion-toggle').click();await page.emulateMedia({reducedMotion:'reduce'});await page.waitForFunction(()=>document.querySelector('#motion-toggle').disabled);assert.equal(await page.locator('.hero-object.camera').evaluate(e=>getComputedStyle(e).animationName),'none');assert.equal(await page.locator('.is-tilting').count(),0);
 await page.emulateMedia({reducedMotion:'no-preference'});await page.locator('nav a[href="#home"]').click();
