@@ -538,6 +538,7 @@ function route() {
   }
 
   const hash = location.hash || '#home';
+  if(window.renderWantedRoute && window.renderWantedRoute(hash)) return;
   if(!hash.startsWith('#item-')){$('#item-view').hidden=true;$('#item-view').replaceChildren()}
   if(window.renderCommunityRoute && renderCommunityRoute(hash))return;
   if (hash.startsWith('#item-')) {
