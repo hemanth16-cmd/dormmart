@@ -1,0 +1,20 @@
+/* The supplied artwork stays intact; these viewports display its emblem and wordmark. */
+.logo.brand-lockup{display:inline-flex;align-items:center;gap:9px;padding:9px 12px;background:#f7f4ed;border:1px solid #dedfd4;border-radius:17px;flex:none;line-height:1;box-shadow:0 3px 10px #20292306;transform:none;transition:box-shadow .2s,border-color .2s}
+.brand-lockup:hover{border-color:#aebbd9;box-shadow:0 4px 16px #1546d914;filter:none}
+.brand-mark,.brand-wordmark{display:block;position:relative;overflow:hidden;flex:none;isolation:isolate}
+.brand-mark{width:40px;height:38px}.brand-wordmark{width:125px;height:23px}
+.brand-lockup .brand-mark img{position:absolute;width:128.71px!important;height:96.53px!important;max-width:none;left:-44.27px;top:-20.53px;object-fit:fill;mix-blend-mode:multiply}
+.brand-lockup .brand-wordmark img{position:absolute;width:192.55px!important;height:144.41px!important;max-width:none;left:-33.78px;top:-92px;object-fit:fill;mix-blend-mode:multiply}
+.auth-story>.brand-lockup{margin-bottom:30px;gap:14px;padding:15px 20px;border-radius:22px}
+.auth-story>.brand-lockup .brand-mark{width:52px;height:49px}.auth-story>.brand-lockup .brand-mark img{width:167.32px!important;height:125.49px!important;left:-57.55px;top:-26.69px}
+.auth-story>.brand-lockup .brand-wordmark{width:163px;height:30px}.auth-story>.brand-lockup .brand-wordmark img{width:250.32px!important;height:187.74px!important;left:-43.91px;top:-119.6px}
+footer .brand-lockup{padding:8px 12px}.header .brand-lockup{margin:0}
+[data-theme=dark] .brand-lockup{background:#f7f4ed;border-color:#e3dfd3;box-shadow:0 3px 14px #0002}
+[data-theme=dark] .hero .search{background:#faf9f5;border-color:#faf9f5}
+[data-theme=dark] .hero .search input{background:transparent;color:#202923}
+[data-theme=dark] .hero .search input::placeholder{color:#62665e;opacity:1}
+[data-theme=dark] .hero .search>span{color:#202923}
+/* Keep the five mobile destinations clear of device home indicators. */
+@media(max-width:700px){.header .logo.brand-lockup{gap:6px;padding:7px 8px;border-radius:13px}.header .brand-lockup .brand-mark{width:31px;height:29px}.header .brand-lockup .brand-mark img{width:99.11px!important;height:74.33px!important;left:-34.09px;top:-15.81px}.header .brand-lockup .brand-wordmark{width:94px;height:18px}.header .brand-lockup .brand-wordmark img{width:145.01px!important;height:108.76px!important;left:-25.44px;top:-69.29px}.header{gap:8px}.header-actions{gap:6px}.header-actions .button{white-space:nowrap}.mobile-dock{padding-bottom:max(10px,env(safe-area-inset-bottom))}.auth-story>.brand-lockup{margin-bottom:22px}footer .brand-lockup{margin-bottom:5px}}
+@media(max-width:370px){.header .brand-lockup .brand-wordmark{width:81px;height:16px}.header .brand-lockup .brand-wordmark img{width:125px!important;height:93.75px!important;left:-21.93px;top:-59.73px}.header .logo.brand-lockup{padding-inline:6px;gap:4px}.header-actions .button{padding:10px 8px}.header .studio-search-button{width:31px}}
+@media(prefers-reduced-motion:reduce){.brand-lockup{transition:none}}
