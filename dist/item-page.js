@@ -3,8 +3,8 @@ function showItemContent(html){
  if(document.querySelector('#modal').open)document.querySelector('#modal').close();
  for(const id of ['home-view','explore-view','profile-view','messages-view'])document.getElementById(id).hidden=true;
  const view=document.getElementById('item-view');view.hidden=false;
- const back=['home','explore','profile'].includes(lastPage)||lastPage.startsWith('messages')?lastPage:'explore';
- view.innerHTML=`<a class="item-back" href="#${escapeHTML(back)}">← Back to ${back==='profile'?'my listings':back.startsWith('messages')?'messages':back==='home'?'home':'Explore'}</a>${html}`;
+ const back=['home','explore','profile','wanted'].includes(lastPage)||lastPage.startsWith('messages')?lastPage:'explore';
+ view.innerHTML=`<a class="item-back" href="#${escapeHTML(back)}">← Back to ${back==='wanted'?'requests':back==='profile'?'my listings':back.startsWith('messages')?'messages':back==='home'?'home':'Explore'}</a>${html}`;
  document.title=(document.getElementById('item-title')?.textContent||'Item')+' — DormMart';
  document.querySelectorAll('.header nav a').forEach(a=>a.removeAttribute('aria-current'));
  document.getElementById('account-button').removeAttribute('aria-current');
