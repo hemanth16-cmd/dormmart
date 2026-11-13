@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#edece6">
+  <meta name="theme-color" content="#e8e2d6">
   <meta name="description" content="DormMart — rent, buy and share useful things nearby. Interactive demo.">
   <title>DormMart — Good things, closer.</title>
   <script src="theme.js"></script>
@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="studio.css">
   <link rel="stylesheet" href="campus.css">
   <link rel="stylesheet" href="brand.css">
+  <link rel="stylesheet" href="dimension.css">
   <link rel="icon" type="image/svg+xml" href="assets/dormmart-icon.svg">
   <link rel="apple-touch-icon" href="assets/dormmart-logo.png">
   <script src="data.js" defer></script>
@@ -91,7 +92,7 @@
           <p class="eyebrow"><span class="dot"></span> GOOD THINGS. GREAT NEIGHBOURS.</p>
           <h1>Your campus.<br>Your <span class="hero-word">possibilities.<svg viewBox="0 0 340 22" aria-hidden="true"><path d="M5 15Q160 -1 330 10M55 20Q195 7 310 15"/></svg></span></h1>
           <p class="intro">
-            A place for the things you need, the things you love,<br>and the things you’re ready to pass on.
+            A place for the things you need, the things you love, <br>and the things you’re ready to pass on.
           </p>
           <form id="hero-search" class="search">
             <span aria-hidden="true">⌕</span>
@@ -108,26 +109,29 @@
           </div>
         </div>
 
-        <div class="hero-art" aria-label="Illustrated collection of things to rent, buy and share"><span class="scene-edition" aria-hidden="true">THE CAMPUS EDIT / VOL. 02</span><span class="scene-grid" aria-hidden="true"></span>
-          <div class="depth-scene" aria-hidden="true"><span class="depth-halo"></span><span class="depth-ring"></span><span class="depth-orb"></span><span class="depth-cube"><i></i><i></i><i></i></span><span class="depth-floor"></span></div>
-          <div class="orbit" aria-hidden="true"></div>
-          <span class="art-spark">✳</span>
-          <div class="floating-note">LESS CLUTTER.<br><strong>More possibilities. ↗</strong></div>
-          <div class="hero-object camera">
-            <img class="hero-photo" src="assets/camera.jpg" alt="Sample camera">
-            <div>
-              <small>FOR YOUR NEXT ADVENTURE</small>
-              <strong>Borrow the moment.</strong>
-              <b>From ₹250 / day ↗</b>
+        <div class="hero-art campus-display" role="img" aria-label="A camera print and a chair card on a cobalt shelf, with a folded price tag reading ₹250 per day"><span class="scene-edition" aria-hidden="true">THE CAMPUS EDIT / VOL. 02</span>
+          <div class="depth-scene" aria-hidden="true"><span class="depth-halo"></span><span class="depth-floor"></span></div>
+          <div class="display-stage" aria-hidden="true">
+            <div class="campus-shelf"><span class="shelf-top"></span><span class="shelf-front"></span><span class="shelf-shadow"></span></div>
+            <span class="contact-shadow contact-camera"></span>
+            <span class="contact-shadow contact-chair"></span>
+            <div class="hero-object camera">
+              <img class="hero-photo" src="assets/camera.jpg" alt="">
+              <div>
+                <small>FOR YOUR NEXT ADVENTURE</small>
+                <strong>Borrow the moment.</strong>
+              </div>
+            </div>
+            <div class="hero-object chair">
+              <img class="hero-photo" src="assets/chair.jpg" alt="">
+              <strong>A new favourite spot.</strong>
+              <small>Pre-loved. Ready for you.</small>
+            </div>
+            <div class="price-tag">
+              <svg class="tag-string" viewBox="0 0 120 70" aria-hidden="true"><path d="M116 64C92 38 60 16 4 6"/></svg>
+              <div class="tag-body"><span class="tag-fold"></span><small>FOR RENT</small><strong>₹250</strong><span>/ day</span></div>
             </div>
           </div>
-          <div class="hero-object chair">
-            <img class="hero-photo" src="assets/chair.jpg" alt="Sample chair">
-            <strong>A new favourite spot.</strong>
-            <small>Pre-loved. Ready for you.</small>
-          </div>
-          <span class="round-sticker">USE MORE.<br>OWN LESS.<br>↗</span>
-          <span class="art-caption">A SECOND LIFE LOOKS GOOD ON EVERYTHING.</span>
         </div>
       </div>
 
