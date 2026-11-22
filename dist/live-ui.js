@@ -18,7 +18,7 @@ if (LIVE_MODE && !GUEST_MODE) {
   password.placeholder='Your password';password.maxLength=72;
   // Existing text-button style; no new CSS.
   const links=document.createElement('p');authForm.append(links);
-  $('.demo > span').textContent='Your campus marketplace · No payments or online bookings';
+  $('.demo > span').textContent='Your campus marketplace · Browse freely · No payments through DormMart';
 
   const modes={
     signin:{submit:'Sign in ↗',password:'current-password',min:1,note:'Sign in with your DormMart email and password.',busy:'Signing in…'},
@@ -40,6 +40,7 @@ if (LIVE_MODE && !GUEST_MODE) {
       resend:[linkButton('Back to sign in',to('signin'))],
       reset:[linkButton('Cancel and sign out',cancelRecovery)]
     }[mode];
+    if(mode!=='reset'&&!demoSignedIn)parts.push(linkButton('← Keep browsing without an account',closeSignIn));
     return parts.flatMap((button,index)=>index?[document.createTextNode(' · '),button]:[button]);
   }
   function setMode(mode,message){
@@ -105,19 +106,39 @@ if (LIVE_MODE && !GUEST_MODE) {
     } catch { if(generation===liveGeneration)toast('Messages could not refresh. Your draft is preserved.'); }
   }
   const scheduleRefresh=()=>{clearTimeout(refreshTimer);refreshTimer=setTimeout(refreshInbox,200)};
+  // Signed-out visitors browse the public catalogue with the same anonymous client (RLS: active listings only).
+  async function loadPublic(){
+    const generation=liveGeneration;
+    setStorageScope('guest');catalogueState='loading';render();
+    try{
+      const items=await liveBackend.catalogue({publicOnly:true});
+      if(generation!==liveGeneration)return;
+      LISTINGS.splice(0,LISTINGS.length,...items);catalogueState='ready';
+    }catch{if(generation!==liveGeneration)return;catalogueState='error'}
+    updateCategoryDropdown();render();route();
+  }
+  window.retryCatalogue=()=>{if(!demoSignedIn&&currentUserId===null)loadPublic()};
+  function closeSignIn(){authRequested=false;syncAuth();route();$('#main').focus()}
+  window.openSignIn=action=>{
+    if(demoSignedIn)return;
+    authRequested=true;if(authMode==='reset')return;
+    setMode('signin',action?`Sign in to ${action}. Browsing stays open without an account.`:modes.signin.note);
+    syncAuth();window.scrollTo(0,0);email.focus();
+  };
   async function applySession(session) {
     const id=session?.user?.id||null;
     if(recoveryPending&&id){
       // A recovery link signs the user in. Require a new password before loading private data.
-      if(authMode!=='reset'){currentUserId=null;initialized=true;clearAccount();liveBackend.setUser(session.user);setMode('reset')}
+      if(authMode!=='reset'){currentUserId=null;initialized=true;clearAccount();liveBackend.setUser(session.user);authRequested=true;syncAuth();setMode('reset')}
       return;
     }
     if(initialized&&id===currentUserId)return;
     initialized=true;currentUserId=id;clearAccount();liveBackend.setUser(session?.user||null);
     if(!id){
       if(authMode==='reset')setMode('signin');
-      if(linkNotice&&linkNotice!=='confirmed'){notice.textContent=linkNotice;linkNotice=''}
+      if(linkNotice&&linkNotice!=='confirmed'){authRequested=true;syncAuth();notice.textContent=linkNotice;linkNotice=''}
       else if(authMode==='signin')notice.textContent=modes.signin.note;
+      await loadPublic();
       return;
     }
     const generation=liveGeneration;notice.textContent='Loading your account…';
@@ -127,7 +148,7 @@ if (LIVE_MODE && !GUEST_MODE) {
       if(generation!==liveGeneration)return;
       LISTINGS.push(...items);userListings.push(...items.filter(x=>x.custom));profile=details;conversations=chats;
       setStorageScope(id);catalogueState='ready';
-      demoSignedIn=true;updateCategoryDropdown();syncAuth();render();route();
+      demoSignedIn=true;authRequested=false;updateCategoryDropdown();syncAuth();setMode('signin');render();route();
       if(linkNotice==='confirmed'){toast('Email confirmed. Welcome to DormMart.');linkNotice=''}
       liveBackend.subscribe(scheduleRefresh,status=>{
         if(status==='SUBSCRIBED')scheduleRefresh();
@@ -135,8 +156,8 @@ if (LIVE_MODE && !GUEST_MODE) {
       });
     } catch {
       if(generation!==liveGeneration)return;
-      initialized=false;
-      notice.textContent='Signed in, but your account could not be loaded. Check the connection and database compatibility, then reload. No demo data has been substituted.';
+      initialized=false;authRequested=true;syncAuth();
+      notice.textContent='Signed in, but your account could not be loaded. Check the connection, then reload. No demo data has been substituted.';
     }
   }
   async function cancelRecovery(){
@@ -145,7 +166,7 @@ if (LIVE_MODE && !GUEST_MODE) {
     setBusy(false);currentUserId=undefined;initialized=false;await applySession(null);setMode('signin');
   }
   window.liveSignOut=async()=>{
-    try { const {error}=await client.auth.signOut({scope:'local'});if(error)throw error;await applySession(null);setMode('signin','You have signed out.'); }
+    try { const {error}=await client.auth.signOut({scope:'local'});if(error)throw error;authRequested=false;await applySession(null);setMode('signin');location.hash='home';toast('You have signed out. You can keep browsing.'); }
     catch {toast('Sign out failed. Please try again.');}
   };
   window.liveStartConversation=async id=>{
@@ -193,7 +214,7 @@ if (LIVE_MODE && !GUEST_MODE) {
       if(mode==='signin'){
         const {data,error}=await client.auth.signInWithPassword({email:address,password:secret});
         if(error)throw error;
-        password.value='';await applySession(data.session);
+        password.value='';const back=location.hash;await applySession(data.session);if(back&&back!==location.hash){location.hash=back}
       } else if(mode==='signup'){
         const {data,error}=await client.auth.signUp({email:address,password:secret,options:{emailRedirectTo:redirectURL()}});
         if(error)throw error;
@@ -246,6 +267,6 @@ if (LIVE_MODE && !GUEST_MODE) {
       setInterval(()=>{if(!document.hidden)refreshInbox()},15000);
       window.addEventListener('online',scheduleRefresh);
       window.addEventListener('focus',scheduleRefresh);
-    } catch {authReady=false;setBusy(false);notice.textContent='DormMart could not connect. Check the public configuration and reload. Sign-in is unavailable until the connection is ready.';}
+    } catch {authReady=false;setBusy(false);catalogueState='error';render();notice.textContent='DormMart could not connect. Check the public configuration and reload. Sign-in is unavailable until the connection is ready.';}
   })();
 }

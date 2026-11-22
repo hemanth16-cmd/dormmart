@@ -2,7 +2,7 @@
    Demo mode keeps its browser-only flow in app.js. */
 if (LIVE_MODE) {
  const STATUS={pending:['Waiting for owner','status-pending'],accepted:['Accepted','status-accepted'],rejected:['Declined','status-cancelled'],cancelled:['Cancelled','status-cancelled'],completed:['Completed','status-accepted']};
- const signedIn=()=>!GUEST_MODE&&demoSignedIn&&!!window.liveBackend?.user;
+ const signedIn=()=>demoSignedIn&&!!window.liveBackend?.user;
  const reader=()=>signedIn()?window.liveBackend:(window.publicBackend||window.liveBackend||null);
  const plural=(n,w)=>`${n} ${w}${n===1?'':'s'}`;
  const daysBetween=(a,b)=>Math.round((Date.parse(b)-Date.parse(a))/864e5);
@@ -26,7 +26,7 @@ if (LIVE_MODE) {
    <p class="notice">${rental?`This is an estimate, not a payment. DormMart never charges you. The owner asks for a refundable deposit of ${money(x.deposit)}, agreed and handled in person. `:'Free to borrow. '}Dates are reserved only if the owner accepts. Pickup is at ${escapeHTML(x.area||'a public campus spot')}; never share a home address.</p>
    ${canBook?'<label class="check"><input type="checkbox" name="understand" required> I understand nothing is charged and the owner must accept.</label>':''}
    <button class="button" type="submit" ${listingUnavailable(x)||!canBook?'disabled':''}>Request ${rental?'rental':'to borrow'} ↗</button>
-   <p class="micro">${canBook?`1–${max} days · the return date is free for the next pickup`:GUEST_MODE?'Sending a request needs an account. Accounts are paused, so you can check dates and the estimate only.':'Sign in to send a booking request.'}</p>
+   <p class="micro">${canBook?`1–${max} days · the return date is free for the next pickup`:GUEST_MODE?'Sending a request needs an account. Accounts are paused, so you can check dates and the estimate only.':'<button type="button" class="text-btn" data-open-signin="request dates">Sign in to send a booking request</button>'}</p>
    <p id="booking-error" class="form-error" role="alert"></p>`;
   let ranges=[];
   const accepted=()=>ranges.map((r,i)=>({id:'booked-'+i,itemId:x.id,status:'Accepted by owner',start:r.start,end:r.end}));
@@ -97,8 +97,7 @@ if (LIVE_MODE) {
   if(generation===liveGeneration)renderBookings();
  }
  window.openLiveBookings=()=>{
-  if(GUEST_MODE){guestAccountNotice();return}
-  if(!signedIn()){syncAuth();return}
+  if(!signedIn()){accountPrompt('see your bookings');return}
   showModal('<p class="eyebrow">RENT, BORROW, RETURN</p><h2 id="modal-title">My bookings</h2><div id="bookings-panel"></div>');
   loadBookings();
  };

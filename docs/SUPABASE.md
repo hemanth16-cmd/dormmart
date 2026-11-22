@@ -1,13 +1,47 @@
+## Live-check repair (2026-11-23)
+
+The user's live run returned 39/65, with listing creation failing because the RPC's
+`owner` variable conflicts with Supabase's legacy `storage.objects.owner` column.
+The minimal test fixture did not include that column. A regression now reproduces
+that error and verifies the repair, retry safety and ownership protections.
+
+Apply `supabase/004-fix-listing-owner-ambiguity.sql` in the SQL Editor after 003.
+It replaces only the save function, keeps SECURITY INVOKER and existing policies,
+changes no data, and preserves contract version 4. It is safe to rerun.
+This repair is prepared locally, not yet confirmed applied live.
+
+The live checker now accepts contract 4, rejects unexpected errors as proof of denial,
+stops after essential setup failures, and uses the rental UUID directly. The original
+missing-function errors omitted product parameters because creation had failed; they
+do not by themselves prove that the booking functions are missing. Likewise, the photo
+reported as referenced had no committed listing reference after the failed save.
+Rerun the full live check after applying 004; messaging and bookings remain unverified.
+
 ## Three ways the app runs
 
 | Mode | How to build | Data | Accounts |
 | --- | --- | --- | --- |
-| **Guest (current public entry)** | `npm run build` with `DORMMART_GUEST_MODE=true` in `.env.local` | Live Supabase, **read-only**: public listings, public request board, booked date ranges | None. Publishing, profiles, messages, offers and booking requests are disabled. |
-| **Live with accounts** | `npm run build` with `DORMMART_GUEST_MODE=false` | Live Supabase under RLS | Existing sign-in flows (paused for now) |
+| **Live, optional accounts (recommended)** | `npm run build` with `DORMMART_GUEST_MODE=false` | Live Supabase under RLS | Browsing is public. "Sign in" opens only for private actions. |
+| **Accounts paused** | `npm run build` with `DORMMART_GUEST_MODE=true` | Live Supabase, **read-only** | None; sign-in is hidden |
 | **Isolated demo** | `npm run build:demo` → `build-demo/` | This browser only (localStorage), demo inventory | Demo sign-in; nothing is sent anywhere |
 
-Guest mode uses a separate non-persisting anonymous client and never restores a saved session.
-Owner names show as "Campus neighbour" because anonymous visitors cannot read profiles.
+**Optional accounts.** Visitors land on the marketplace without signing in. They can browse
+listings, item pages, booked dates and estimates, saved items, comparison and the request
+board. These actions open the existing sign-in panel instead:
+
+- publishing a listing
+- My profile
+- messages and "Message owner"
+- posting a request or making an offer
+- requesting dates
+- My bookings
+
+The sign-in panel has a "Keep browsing without an account" link. Signing out returns to public
+browsing and clears all private state. Signed-out visitors use the anonymous key, so RLS still
+limits them to public rows.
+
+**Accounts paused** uses a separate non-persisting anonymous client and never restores a saved
+session. Owner names show as "Campus neighbour" because anonymous visitors cannot read profiles.
 
 The demo build contains no Supabase URL, key or SDK, so it cannot reach the database. It is
 labelled "Demo · no real transactions", and its booking, request-board and message flows say
@@ -17,7 +51,9 @@ they are local demos.
 
 Status (2026-11-23): the user reports applying migrations 001, 002 and 003 in the
 Supabase SQL Editor (contract version 4) and checking guest browsing and the request board.
-Authenticated live workflows have not yet been verified. Guest mode remains enabled.
+The public tables and functions answer, and anonymous visitors are refused (checked live with
+the public key). Authenticated live workflows have not yet been verified. Accounts are now
+optional (see above).
 Run `npm run check:live` with dedicated test accounts for live verification; mock browser
 and local PostgreSQL tests do not establish production readiness.
 

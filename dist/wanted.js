@@ -42,13 +42,13 @@
    if(!(await backend.workflowsAvailable()))return null;
    return backend.requests();
   },
-  canWrite:()=>!GUEST_MODE&&demoSignedIn&&!!window.liveBackend?.user,
+  canWrite:()=>demoSignedIn&&!!window.liveBackend?.user,
   async save(value,existing){await liveBackend().saveRequest(value,existing?.id)},
   async setStatus(p,status){await liveBackend().setRequestStatus(p.id,status)},
   async archive(p){await liveBackend().archiveRequest(p.id)},
   async offer(p,item,note){await liveBackend().offerListing(p.id,item.id,note)},
   async withdraw(p,offer){await liveBackend().withdrawOffer(offer.id)},
-  labels:{notice:GUEST_MODE?['Browsing as a guest','Requests are public. Posting a request or offering an item needs an account, and accounts are paused for now.']:['Public request board','Requests are visible to everyone on DormMart. Offers are visible only to you and the requester.'],
+  labels:{get notice(){return GUEST_MODE?['Browsing as a guest','Requests are public. Posting a request or offering an item needs an account, and accounts are paused for now.']:demoSignedIn?['Public request board','Requests are visible to everyone on DormMart. Offers are visible only to you and the requester.']:['Public request board','Anyone can browse requests. Sign in to post a request or offer one of your listings.']},
    count:'open requests on DormMart',saved:'Request published.',offered:'Offer sent. The requester can now see your listing and message you.',archiveVerb:'Archive',
    formNote:'Your request is public. Use a public pickup area, never a private address.',submit:'Publish request ↗',offerNote:'Your listing and note become visible to the requester only. They can message you about it.'}
  };
@@ -67,7 +67,7 @@
  }
  function guard(){
   if(store.canWrite())return true;
-  if(GUEST_MODE)guestAccountNotice();else if(!demoSignedIn)syncAuth();
+  accountPrompt('post requests and offer items');
   return false;
  }
  async function act(fn,success){
