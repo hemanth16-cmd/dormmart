@@ -1,7 +1,8 @@
 /* Curated browsing, quick search and a browser-local comparison shortlist. */
 (()=>{
- let compare=readStore('dormmart-compare',[]).filter(Number.isSafeInteger).filter(id=>LISTINGS.some(x=>x.id===id)).slice(0,3);
+ let compare=LIVE_MODE?[]:readStore('dormmart-compare',[]).filter(Number.isSafeInteger).filter(id=>LISTINGS.some(x=>x.id===id)).slice(0,3);
  const dock=document.getElementById('compare-dock');
+ window.addEventListener('dormmart-account-change',()=>{compare=[];syncCompare()});
  function browse(value,query=''){
   $('#filters').reset();$('#query').value=query;
   if(['rent','buy','share'].includes(value))$('#mode').value=value;
@@ -12,7 +13,7 @@
  $('#studio-list-item').onclick=()=>$('#list-button').click();
  function syncCompare(){
   compare=compare.filter(id=>LISTINGS.some(x=>x.id===id));
-  document.querySelectorAll('[data-compare]').forEach(b=>{const selected=compare.includes(Number(b.dataset.compare));b.setAttribute('aria-pressed',String(selected));b.innerHTML=`<span aria-hidden="true">${selected?'✓':'＋'}</span> ${selected?'Added to compare':'Compare item'}`});
+  document.querySelectorAll('[data-compare]').forEach(b=>{const selected=compare.includes(listingId(b.dataset.compare));b.setAttribute('aria-pressed',String(selected));b.innerHTML=`<span aria-hidden="true">${selected?'✓':'＋'}</span> ${selected?'Added to compare':'Compare item'}`});
   dock.hidden=!compare.length||document.body.classList.contains('signed-out');
   dock.innerHTML=`<div class="compare-dock-copy"><strong>${compare.length} / 3 selected</strong><span>Find the one that fits.</span></div><div class="compare-miniatures">${compare.map(id=>{const x=LISTINGS.find(x=>x.id===id);return `<button type="button" data-uncompare="${id}" aria-label="Remove ${escapeHTML(x.title)} from comparison"><img src="${escapeHTML(x.photos?.[0]||x.image||'')}" alt=""><span>×</span></button>`}).join('')}</div><button class="button small" id="open-compare" ${compare.length<2?'disabled':''}>Compare ${compare.length} items ↗</button><button class="text-btn" id="clear-compare">Clear</button>`;
   if(entering){const mini=dock.querySelector(`[data-uncompare="${entering.id}"]`);if(mini)flyIntoTray(entering.from,mini);entering=null}
@@ -36,12 +37,12 @@
  function openComparison(){
   const items=compare.map(id=>LISTINGS.find(x=>x.id===id)).filter(Boolean);
   if(items.length<2)return;
-  showModal(`<p class="eyebrow">SIDE BY SIDE. EASY TO DECIDE.</p><h2 id="modal-title">Find your best fit.</h2><p class="micro">Rental prices are per day; sale prices are one-time. Deposits are separate. All listings are demos.</p><div class="comparison-scroll"><table class="comparison-table"><caption class="sr-only">Selected item comparison</caption><thead><tr><th scope="col">Item</th>${items.map(x=>`<th scope="col"><img src="${escapeHTML(x.photos?.[0]||x.image||'')}" alt=""><a href="#item-${x.id}" class="compare-item-link">${escapeHTML(x.title)} ↗</a></th>`).join('')}</tr></thead><tbody>${[
+  showModal(`<p class="eyebrow">SIDE BY SIDE. EASY TO DECIDE.</p><h2 id="modal-title">Find your best fit.</h2><p class="micro">Rental prices are per day; sale prices are one-time. Deposits are separate. ${LIVE_MODE?'Availability is confirmed with the owner.':'All listings are demos.'}</p><div class="comparison-scroll"><table class="comparison-table"><caption class="sr-only">Selected item comparison</caption><thead><tr><th scope="col">Item</th>${items.map(x=>`<th scope="col"><img src="${escapeHTML(x.photos?.[0]||x.image||'')}" alt=""><a href="#item-${x.id}" class="compare-item-link">${escapeHTML(x.title)} ↗</a></th>`).join('')}</tr></thead><tbody>${[
    ['Offer',x=>x.mode==='rent'?'Rent':x.mode==='buy'?'Buy':'Free sharing'],
    ['Price',x=>(x.price?money(x.price):'Free')+(x.mode==='rent'?' / day':'')],
    ['Deposit',x=>x.mode==='rent'?money(x.deposit):'Not applicable'],
    ['Condition',x=>x.condition||'Not stated'],
-   ['Distance',x=>x.distance+' km (demo)'],
+   ['Distance',x=>x.live?'Not measured':x.distance+' km (demo)'],
    ['Status',x=>listingStatusText(x)],
    ['Owner',x=>x.owner],
    ['Dates',x=>x.availableFrom&&x.availableUntil?x.availableFrom+' → '+x.availableUntil:'Check item details'],
@@ -51,7 +52,7 @@
  }
  document.addEventListener('click',e=>{
   const button=e.target.closest('[data-compare],[data-uncompare]');if(!button)return;
-  const id=Number(button.dataset.compare||button.dataset.uncompare);
+  const id=listingId(button.dataset.compare||button.dataset.uncompare);
   if(compare.includes(id))compare=compare.filter(x=>x!==id);
   else if(compare.length<3){compare.push(id);if(button.dataset.compare)entering={id,from:button.closest('.card')?.querySelector('.item-art img')}}
   else{toast('You can compare three items. Remove one to add another.');return}

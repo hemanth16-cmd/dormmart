@@ -1,5 +1,13 @@
 /* Campus requests are local demonstrations. Nothing is sent to another person. */
 (()=>{
+ if (LIVE_MODE) {
+  window.renderWantedRoute=hash=>{
+    const view=$('#wanted-view'); view.hidden=hash!=='#wanted'; if(hash!=='#wanted')return false;
+    ['home','explore','profile','messages','item'].forEach(x=>$('#'+x+'-view').hidden=true);
+    view.innerHTML='<div class="profile-heading"><h1>Campus wishlist</h1></div><p class="notice">The online request board is not available yet. Explore listings and message their owners.</p><a class="button" href="#explore">Explore items</a>';
+    return true;
+  }; return;
+ }
  const KEY='dormmart-wanted-v1', view=$('#wanted-view');
  const today=()=>localDate();
  const future=n=>{const d=new Date();d.setDate(d.getDate()+n);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};

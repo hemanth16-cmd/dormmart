@@ -245,7 +245,7 @@ LISTINGS.push(...[
     "color": "#DCE4D7"
   }
 ]);
-function filterListings(items, filters, savedIds=[]){return items.filter(x=>(filters.mode==='all'||x.mode===filters.mode)&&(filters.category==='all'||x.category===filters.category)&&x.distance<=filters.radius&&(filters.price===''||x.price<=Number(filters.price))&&(!filters.verified||x.verified)&&(!filters.saved||savedIds.includes(x.id))&&(x.title+' '+x.category+' '+x.description).toLowerCase().includes(filters.query.trim().toLowerCase())).sort((a,b)=>filters.sort==='price'?a.price-b.price:filters.sort==='newest'?b.id-a.id:a.distance-b.distance)}
+function filterListings(items, filters, savedIds=[]){return items.filter(x=>(filters.mode==='all'||x.mode===filters.mode)&&(filters.category==='all'||x.category===filters.category)&&(x.distance==null||x.distance<=filters.radius)&&(filters.price===''||x.price<=Number(filters.price))&&(!filters.verified||x.verified)&&(!filters.saved||savedIds.includes(x.id))&&(x.title+' '+x.category+' '+x.description).toLowerCase().includes(filters.query.trim().toLowerCase())).sort((a,b)=>filters.sort==='price'?a.price-b.price:filters.sort==='newest'?(Date.parse(b.createdAt)||Number(b.id)||0)-(Date.parse(a.createdAt)||Number(a.id)||0):a.distance-b.distance)}
 function calculateQuote(item,days,security){const fee=item.mode==='rent'?item.price*days:item.price;const deposit=item.mode==='rent'&&security!=='guarantor'?item.deposit:0;return {fee,deposit,total:fee+deposit}}
 if(typeof module!=='undefined')module.exports={LISTINGS,filterListings,calculateQuote};
 

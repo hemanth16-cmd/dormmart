@@ -17,7 +17,7 @@ function showItemContent(html){
  let showTimer,hideTimer,active=null,dismissed=null;
  function hide(){clearTimeout(showTimer);clearTimeout(hideTimer);showTimer=null;hideTimer=null;preview.hidden=true;active=null}
  function position(card){const r=card.getBoundingClientRect(),width=Math.min(300,innerWidth-24);preview.style.width=width+'px';const left=r.right+12+width<=innerWidth-12?r.right+12:r.left-width-12>=12?r.left-width-12:Math.max(12,Math.min(innerWidth-width-12,r.left));preview.style.left=left+'px';preview.style.top=Math.max(12,Math.min(r.top,innerHeight-preview.offsetHeight-12))+'px'}
- function show(card){if(!fine.matches||!card.isConnected||document.querySelector('#modal').open)return;const item=LISTINGS.find(x=>x.id===Number(card.dataset.previewItem));if(!item)return;active=card;
+ function show(card){if(!fine.matches||!card.isConnected||document.querySelector('#modal').open)return;const item=LISTINGS.find(x=>x.id===listingId(card.dataset.previewItem));if(!item)return;active=card;
  preview.innerHTML=`${itemPhoto(item)}<div class="preview-body"><p class="eyebrow">QUICK LOOK · ${item.mode==='rent'?'FOR RENT':item.mode==='buy'?'FOR SALE':'FREE SHARING'}</p><h3>${escapeHTML(item.title)}</h3><p class="preview-price">${item.price?money(item.price):'Free'} <small>${item.mode==='rent'?'/ day':''}</small></p><p>${escapeHTML(item.condition||'Good')} · ${escapeHTML(listingStatusText(item))}</p><p class="preview-description">${escapeHTML(item.description)}</p><p class="micro">◎ ${escapeHTML(item.area||item.distance+' km away')} · ${escapeHTML(item.owner)}</p><a class="button small" href="#item-${item.id}">View full details ↗</a></div>`;
  preview.hidden=false;position(card);
  }

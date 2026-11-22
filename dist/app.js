@@ -1,5 +1,11 @@
 function listingStatusText(x){if(dateRangeValid(x.blockedFrom,x.blockedUntil))return localDate()>=x.blockedFrom&&localDate()<x.blockedUntil?'Rented out':'Available (see dates)';return x.status==='sold'?'Sold':x.status==='rented'?(x.mode==='share'?'On loan':'Rented out'):'Available'}
 /* DormMart core application logic */
+const LIVE_MODE = window.DORMMART_CONFIG?.mode === 'supabase';
+const defaultCategories = [...new Set(LISTINGS.map(x=>x.category))];
+let liveGeneration = 0;
+function listingId(value) { return LIVE_MODE ? String(value) : Number(value); }
+if (LIVE_MODE) LISTINGS.splice(0);
+
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
 const money = n => '₹' + Number(n).toLocaleString('en-IN');
@@ -16,14 +22,15 @@ function readStore(key, fallback) {
 
 function persist(key, value) {
   try {
+    if (LIVE_MODE) return; // Live shortlist stays in memory; never share account data through demo storage.
     localStorage.setItem(key, JSON.stringify(value));
   } catch {
     toast('Browser storage is unavailable. Changes last for this visit.');
   }
 }
 
-let saved = readStore('dormmart-saved', []).filter(Number.isInteger);
-let requests = readStore('dormmart-requests', []).filter(x => x && Number.isInteger(x.itemId) && typeof x.id === 'string');
+let saved = LIVE_MODE ? [] : readStore('dormmart-saved', []).filter(Number.isInteger);
+let requests = LIVE_MODE ? [] : readStore('dormmart-requests', []).filter(x => x && Number.isInteger(x.itemId) && typeof x.id === 'string');
 let toastTimer;
 
 function toast(message) {
@@ -37,7 +44,7 @@ function toast(message) {
 
 // Global category tracking
 function getCategories() {
-  return [...new Set(LISTINGS.map(x => x.category))];
+  return [...new Set([...(LIVE_MODE?defaultCategories:[]),...LISTINGS.map(x => x.category)])];
 }
 var categories = getCategories();
 
@@ -82,7 +89,7 @@ function renderCategoryChips() {
 function itemPhoto(x, detail = false) {
   const photos = x.photos && x.photos.length ? x.photos : (x.image ? [x.image] : []);
   if (photos.length > 0 && photos[0]) {
-    return `<div class="item-art ${detail ? 'detail-art' : ''}"><img src="${escapeHTML(photos[0])}" alt="${escapeHTML(x.title)} — ${x.custom ? 'owner-uploaded photo' : 'representative sample photo'}" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="photo-fallback" hidden>${escapeHTML(x.emoji || 'Photo unavailable')}</span></div>`;
+    return `<div class="item-art ${detail ? 'detail-art' : ''}"><img src="${escapeHTML(photos[0])}" alt="${escapeHTML(x.title)} — ${x.custom || x.live ? 'owner-uploaded photo' : 'representative sample photo'}" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="photo-fallback" hidden>${escapeHTML(x.emoji || 'Photo unavailable')}</span></div>`;
   }
   return `<div class="item-art ${detail ? 'detail-art' : ''}" style="--item-color:${escapeHTML(x.color || '#e0e5d9')}" aria-hidden="true"><span>${escapeHTML(x.emoji || '📦')}</span></div>`;
 }
@@ -103,7 +110,7 @@ function card(x) {
       <div class="card-body">
         <div class="card-meta">
           <span>${escapeHTML(x.category)}</span>
-          <span>◎ ${x.custom ? 'Your listing' : x.distance + ' km away'}</span>
+          <span>◎ ${x.custom ? 'Your listing' : x.live ? escapeHTML(x.area) : x.distance + ' km away'}</span>
         </div>
         <h3><a class="card-link" href="#item-${x.id}">${escapeHTML(x.title)}</a></h3>
         <span class="condition-badge">${listingStatusText(x)}</span> <span class="condition-badge">${escapeHTML(x.condition || 'Good')}</span>
@@ -253,7 +260,7 @@ $('#explore-categories')?.addEventListener('click', handleCategoryClick);
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-save]');
   if (!b) return;
-  const id = Number(b.dataset.save);
+  const id = listingId(b.dataset.save);
   saved = saved.includes(id) ? saved.filter(x => x !== id) : [...saved, id];
   persist('dormmart-saved', saved);
   render();
@@ -315,7 +322,7 @@ function openItem(id) {
 
     <div class="item-detail-layout"><div class="item-visual">${itemPhoto(x, true)}
     ${x.photos?.length > 1 ? `<div class="detail-gallery">${x.photos.slice(1).map((p, i) => `<img src="${escapeHTML(p)}" alt="${escapeHTML(x.title)} photo ${i + 2}">`).join('')}</div>` : ''}
-    <p class="micro">${x.custom ? 'Owner-uploaded photos. Condition is self-reported.' : 'Representative sample photo, not evidence of this specific item’s condition.'}</p>
+    <p class="micro">${x.custom || x.live ? 'Owner-uploaded photos. Condition is self-reported.' : 'Representative sample photo, not evidence of this specific item’s condition.'}</p>
 
     </div><div class="item-info"><div class="item-page-price">${x.price?money(x.price):'Free'} <small>${rental?'/ day':borrow?'to borrow':'one-time price'}</small></div><div class="trust-badges-row">
       ${x.verified ? '<span class="badge-chip badge-email">✓ Email verified</span>' : '<span class="badge-chip">Email not verified</span>'}
@@ -330,7 +337,7 @@ function openItem(id) {
     <div class="trust-passport">
       <h4>🛡 Campus Trust & Safety Notes</h4>
       <p>
-        <strong>${escapeHTML(x.owner)}</strong> · ${x.custom ? 'Your listing' : x.distance + ' km away'} · ${x.reviews ? '★ ' + x.rating + ' (' + x.reviews + ' reviews)' : 'No reviews yet'}.
+        <strong>${escapeHTML(x.owner)}</strong> · ${x.custom ? 'Your listing' : x.live ? escapeHTML(x.area) : x.distance + ' km away'} · ${x.reviews ? '★ ' + x.rating + ' (' + x.reviews + ' reviews)' : 'No reviews yet'}.
         <br>All meetups take place at designated public campus spots during daylight. Never transfer an original identity card or passport as collateral.
       </p>
     </div>
@@ -379,6 +386,10 @@ function openItem(id) {
   `);
 
   const form = $('#booking-form');
+  if (LIVE_MODE) {
+    form.innerHTML='<p class="notice">Bookings and payments are not available yet. Message the owner to discuss availability and a public pickup point.</p>';
+    return;
+  }
   function quote() {
     const data = new FormData(form);
     let days = borrow ? (Date.parse(data.get('end')) - Date.parse(data.get('start'))) / 86400000 : 1;
@@ -446,6 +457,7 @@ function openItem(id) {
 
 // "My demo requests" modal
 $('#requests-button').onclick = () => {
+  if (LIVE_MODE) { toast('Online bookings are not available yet.'); return; }
   showModal(`
     <p class="eyebrow">SAVED IN THIS BROWSER</p>
     <h2 id="modal-title">Your demo requests</h2>
@@ -542,7 +554,7 @@ function route() {
   if(!hash.startsWith('#item-')){$('#item-view').hidden=true;$('#item-view').replaceChildren()}
   if(window.renderCommunityRoute && renderCommunityRoute(hash))return;
   if (hash.startsWith('#item-')) {
-    openItem(Number(hash.slice(6)));
+    openItem(listingId(hash.slice(6)));
     return;
   }
 
