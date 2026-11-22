@@ -254,7 +254,7 @@ function validDate(value) {
  return typeof value==='string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0,10)===value;
 }
 function dateRangeValid(start,end){return validDate(start)&&validDate(end)&&start<end}
-function listingUnavailable(item){return item.status==='sold'||(item.status==='rented'&&!dateRangeValid(item.blockedFrom,item.blockedUntil))}
+function listingUnavailable(item){return item.status==='inactive'||item.status==='sold'||(item.status==='rented'&&!dateRangeValid(item.blockedFrom,item.blockedUntil))}
 function rentalDateError(item,start,end,bookings=[],excludeId){
  if(listingUnavailable(item))return 'This item is currently unavailable.';
  if(item.mode==='buy')return '';

@@ -4,9 +4,10 @@ try { if (!LIVE_MODE) demoSignedIn = sessionStorage.getItem('dormmart-demo-sessi
 const userListings = LIVE_MODE ? [] : readStore('dormmart-listings-v2', []).filter(x => x && Number.isSafeInteger(x.id) && x.id > 100 && typeof x.title === 'string' && ['buy','rent','share'].includes(x.mode) && Array.isArray(x.photos) && x.photos.every(p=>/^data:image\/jpeg;base64,/.test(p)));
 LISTINGS.push(...userListings);
 function syncAuth() {
-  document.body.classList.toggle('signed-out', !demoSignedIn);
-  $('#auth-screen').hidden = demoSignedIn;
-  for (const selector of ['.header', '#main', 'footer']) $(selector).hidden = !demoSignedIn;
+  const canBrowse=demoSignedIn||GUEST_MODE;
+  document.body.classList.toggle('signed-out', !canBrowse);
+  $('#auth-screen').hidden = canBrowse;
+  for (const selector of ['.header', '#main', 'footer']) $(selector).hidden = !canBrowse;
   $('#account-button .profile-nav-label').textContent = 'My profile';
 }
 $('#auth-form').onsubmit = e => {
@@ -34,7 +35,7 @@ document.addEventListener('click',e=>{
   const id=listingId(b.dataset.removeListing), index=userListings.findIndex(x=>x.id===id);
   if(index<0)return;
   const item=userListings[index];
-  showModal(`<p class="eyebrow">REMOVE YOUR LISTING</p><h2 id="modal-title">Remove this item?</h2><p><strong>${escapeHTML(item.title)}</strong> will be removed ${LIVE_MODE?'from the marketplace':'from this browser’s marketplace and saved items'}. ${LIVE_MODE?'Photo files are retained for maintenance cleanup.':'Its listing photos will also be removed.'} Existing request history stays.</p><p>You can mark it unavailable instead if you want to keep it for later.</p><div class="detail-grid"><button type="button" class="button" id="keep-listing">Keep listing</button><button type="button" class="text-btn" id="confirm-remove-listing">Yes, remove listing</button></div><p id="remove-error" class="form-error" role="alert"></p>`);
+  showModal(`<p class="eyebrow">REMOVE YOUR LISTING</p><h2 id="modal-title">Remove this item?</h2><p><strong>${escapeHTML(item.title)}</strong> will be removed ${LIVE_MODE?'from the marketplace':'from this browser’s marketplace and saved items'}. ${LIVE_MODE?'The listing is archived; existing conversations and photos are preserved.':'Its listing photos will also be removed.'} Existing request history stays.</p><p>You can mark it unavailable instead if you want to keep it for later.</p><div class="detail-grid"><button type="button" class="button" id="keep-listing">Keep listing</button><button type="button" class="text-btn" id="confirm-remove-listing">Yes, remove listing</button></div><p id="remove-error" class="form-error" role="alert"></p>`);
   $('#keep-listing').onclick=()=>{showMyListings();$(`[data-remove-listing="${id}"]`)?.focus()};
   $('#keep-listing').focus();
   $('#confirm-remove-listing').onclick=async()=>{
@@ -48,11 +49,12 @@ document.addEventListener('click',e=>{
   };
 });
 async function compressPhoto(file){
-  if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>8*1024*1024)throw Error('Choose JPG, PNG or WebP photos, up to 8 MB each.');
+  if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>(LIVE_MODE?5:8)*1024*1024)throw Error(LIVE_MODE?'Choose JPG, PNG or WebP photos, up to 5 MiB each.':'Choose JPG, PNG or WebP photos, up to 8 MB each.');
   const bitmap=await createImageBitmap(file);
   try{const scale=Math.min(1,1000/Math.max(bitmap.width,bitmap.height));const canvas=document.createElement('canvas');canvas.width=Math.round(bitmap.width*scale);canvas.height=Math.round(bitmap.height*scale);const ctx=canvas.getContext('2d');ctx.fillStyle='#fafaf5';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);return canvas.toDataURL('image/jpeg',.72)}finally{bitmap.close()}
 }
 function openListingForm(editId){
+ if(GUEST_MODE){guestAccountNotice();return}
  const existing=(typeof editId==='number'||typeof editId==='string')?userListings.find(x=>x.id===editId):null;
  if(!demoSignedIn){syncAuth();return}
  showModal(`<p class="eyebrow" id="listing-step">STEP 1 OF 2 · YOUR LISTING</p><h2 id="modal-title">What would you like to do?</h2><section id="listing-choice"><p>Give your item a new home, or let someone borrow it for a while.</p><div class="listing-mode-options"><button type="button" class="listing-mode-card" data-listing-mode="buy"><span aria-hidden="true">↗</span><strong>Sell an item</strong><small>Set a one-time price. The buyer keeps it.</small></button><button type="button" class="listing-mode-card" data-listing-mode="rent"><span aria-hidden="true">↔</span><strong>Rent out an item</strong><small>Set a daily rate and a refundable deposit.</small></button></div><button type="button" class="text-btn" data-listing-mode="share">Or share it for free →</button></section><form id="listing-form" class="detail-form" hidden><button type="button" class="text-btn" id="change-listing-mode">← Change Sell / Rent</button><p class="notice" id="listing-mode-help"></p><fieldset id="listing-fields" disabled><label>Item name<input name="title" type="text" maxlength="70" required placeholder="e.g. Wooden study desk"></label><div class="detail-grid"><label>I want to<select name="mode"><option value="buy">Sell this item</option><option value="rent">Rent this item out</option><option value="share">Share for free</option></select></label><label>Category<select name="category">${categories.map(c=>`<option>${escapeHTML(c)}</option>`).join('')}</select></label></div><div class="detail-grid"><label><span id="listing-price-label">Sale price (₹)</span><input name="price" type="number" min="1" max="1000000" step="1" required></label><label id="deposit-label" hidden>Refundable deposit (₹)<input name="deposit" type="number" min="0" max="1000000" step="1" value="0"></label></div><div id="guarantor-group" hidden><label class="check"><input type="checkbox" name="alternative" checked> Allow guarantor alternative instead of cash deposit</label></div><section id="rental-dates" hidden><h3>When can someone borrow it?</h3><p class="micro">Choose the earliest pickup and latest return. The return date is available for the next pickup.</p><div class="detail-grid"><label>Available from<input type="date" name="availableFrom"></label><label>Return by<input type="date" name="availableUntil"></label></div><label class="check"><input type="checkbox" name="hasBlockedDates"> Already rented / on loan for some dates</label><div id="blocked-dates" class="detail-grid" hidden><label>Unavailable from<input type="date" name="blockedFrom"></label><label>Available again on<input type="date" name="blockedUntil"></label></div></section><label>Condition<select name="condition"><option>Like new</option><option>Excellent</option><option>Good</option><option>Fair</option></select></label><label>Condition notes & description<textarea name="description" rows="3" maxlength="1000" required placeholder="What’s included? Mention scratches, wear or anything that doesn’t work."></textarea></label><h3>Where can it be picked up?</h3><label>Public locality / campus<input name="area" type="text" maxlength="80" required placeholder="e.g. Presidency University, Bengaluru"></label><label>Pickup address<textarea name="address" rows="2" maxlength="250" required placeholder="Building, street and nearby landmark"></textarea></label><div class="detail-grid"><label>City<input name="city" type="text" maxlength="60" required placeholder="e.g. Bengaluru"></label><label>PIN code<input name="postcode" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required placeholder="6-digit PIN"></label></div><p class="micro">Only your public locality appears on the listing. The pickup address stays in this browser and can be viewed in My listings. Use a public meetup point for the demo.</p><label>Item photos — 1 to 3<input name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple></label><p class="micro">Add the full item, another angle and any wear. The first photo is your cover. Add more photos or remove a photo to replace it. JPG, PNG or WebP, up to 8 MB each. Photos stay in this browser.</p><div id="photo-preview" class="photo-preview"></div><div class="trust-checks"><label class="check"><input type="checkbox" name="verified" checked> Display "✓ Email verified" badge</label><label class="check"><input type="checkbox" name="student" checked> Display "🎓 Student affiliation reviewed" badge</label></div><p id="listing-error" role="alert" class="form-error"></p><button class="button" id="publish-listing" type="submit">Add to demo marketplace ↗</button></fieldset></form>`);
@@ -60,7 +62,7 @@ function openListingForm(editId){
  if(LIVE_MODE){
    for(const name of ['address','city','postcode','verified','student','alternative']){const field=form.elements[name];field.required=false;field.disabled=true;field.closest('label').hidden=true}
    form.querySelector('.trust-checks').hidden=true;
-   for(const note of form.querySelectorAll('.micro'))note.textContent=note.textContent.includes('Only your public')?'Only the public pickup area is published. Arrange exact meetup details privately.':note.textContent.replace('Photos stay in this browser.','Photos are published with your listing.');
+   for(const note of form.querySelectorAll('.micro'))note.textContent=note.textContent.includes('Only your public')?'Only the public pickup area is published. Arrange exact meetup details privately.':note.textContent.replace('Photos stay in this browser.','Photos are published with your listing.').replace('8 MB','5 MiB');
    $('#guarantor-group').hidden=true;
  }
  const draftId=LIVE_MODE?crypto.randomUUID():Date.now();
@@ -124,6 +126,7 @@ function openListingForm(editId){
   form.elements.photos.required=false;
   renderPhotos();
   $('#listing-step').textContent='EDIT YOUR LISTING';
+  if(existing.listingType==='both')$('#listing-mode-help').textContent+=' This existing sale-or-rent listing keeps both options when saved as Sell. Choosing Rent changes it to rental only.';
   $('#listing-mode-help').textContent+=' Add or remove individual photos and choose a cover. Photo changes are saved only when you save the listing. Closing without saving keeps your original listing.';
  }
 }

@@ -1,6 +1,10 @@
 /* Curated browsing, quick search and a browser-local comparison shortlist. */
 (()=>{
- let compare=LIVE_MODE?[]:readStore('dormmart-compare',[]).filter(Number.isSafeInteger).filter(id=>LISTINGS.some(x=>x.id===id)).slice(0,3);
+ // Browser-local shortlist, scoped like saved items (demo, live guest, or per account).
+ let compare=[];
+ const loadCompare=()=>{compare=storageScope?validIdList(readStore(storageKey('dormmart-compare'),[])).slice(0,3):[]};
+ loadCompare();
+ window.addEventListener('dormmart-scope-change',()=>{loadCompare();syncCompare()});
  const dock=document.getElementById('compare-dock');
  window.addEventListener('dormmart-account-change',()=>{compare=[];syncCompare()});
  function browse(value,query=''){
@@ -12,10 +16,12 @@
  document.addEventListener('click',e=>{const collection=e.target.closest('[data-studio-collection]');if(collection)browse(collection.dataset.studioCollection)});
  $('#studio-list-item').onclick=()=>$('#list-button').click();
  function syncCompare(){
-  compare=compare.filter(id=>LISTINGS.some(x=>x.id===id));
+  // Drop missing listings only once the catalogue has loaded, so a slow load keeps the list.
+  if(catalogueState==='ready')compare=compare.filter(id=>LISTINGS.some(x=>x.id===id));
+  const shown=compare.map(id=>LISTINGS.find(x=>x.id===id)).filter(Boolean);
   document.querySelectorAll('[data-compare]').forEach(b=>{const selected=compare.includes(listingId(b.dataset.compare));b.setAttribute('aria-pressed',String(selected));b.innerHTML=`<span aria-hidden="true">${selected?'✓':'＋'}</span> ${selected?'Added to compare':'Compare item'}`});
-  dock.hidden=!compare.length||document.body.classList.contains('signed-out');
-  dock.innerHTML=`<div class="compare-dock-copy"><strong>${compare.length} / 3 selected</strong><span>Find the one that fits.</span></div><div class="compare-miniatures">${compare.map(id=>{const x=LISTINGS.find(x=>x.id===id);return `<button type="button" data-uncompare="${id}" aria-label="Remove ${escapeHTML(x.title)} from comparison"><img src="${escapeHTML(x.photos?.[0]||x.image||'')}" alt=""><span>×</span></button>`}).join('')}</div><button class="button small" id="open-compare" ${compare.length<2?'disabled':''}>Compare ${compare.length} items ↗</button><button class="text-btn" id="clear-compare">Clear</button>`;
+  dock.hidden=!shown.length||document.body.classList.contains('signed-out');
+  dock.innerHTML=`<div class="compare-dock-copy"><strong>${shown.length} / 3 selected</strong><span>${LIVE_MODE?'Kept on this browser.':'Find the one that fits.'}</span></div><div class="compare-miniatures">${shown.map(x=>{const id=x.id;return `<button type="button" data-uncompare="${id}" aria-label="Remove ${escapeHTML(x.title)} from comparison"><img src="${escapeHTML(x.photos?.[0]||x.image||'')}" alt=""><span>×</span></button>`}).join('')}</div><button class="button small" id="open-compare" ${shown.length<2?'disabled':''}>Compare ${shown.length} items ↗</button><button class="text-btn" id="clear-compare">Clear</button>`;
   if(entering){const mini=dock.querySelector(`[data-uncompare="${entering.id}"]`);if(mini)flyIntoTray(entering.from,mini);entering=null}
   $('#open-compare').onclick=openComparison;$('#clear-compare').onclick=()=>{compare=[];persist('dormmart-compare',compare);syncCompare()};
  }

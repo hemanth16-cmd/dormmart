@@ -19,7 +19,7 @@
 
 DormMart helps students discover affordable items nearby and give unused belongings another life. Instead of buying something new for a short-term need, users can explore rentals, second-hand purchases and free borrowing—or post a request for something they cannot find.
 
-**Current stage:** the default site remains a vanilla HTML/CSS/JavaScript demo. This branch adds an opt-in Supabase integration for auth, profiles, listings/photos and private messages. It is disabled pending verification of the existing database schema and policies. See [Supabase integration and release checks](docs/SUPABASE.md).
+**Current stage:** the default site remains a vanilla HTML/CSS/JavaScript demo. This branch adds an opt-in Supabase integration for auth, profiles, listings/photos and private messages. It is disabled pending the reviewed schema-alignment migration and live-account tests. See [Supabase integration and release checks](docs/SUPABASE.md).
 
 **Live demo:** [dormmart.vercel.app](https://dormmart.vercel.app)
 
@@ -131,7 +131,7 @@ python -m http.server 4173 --directory dist
 
 Open **[localhost:4173](http://localhost:4173)** in your browser. If your Windows installation uses the Python launcher, replace `python` with `py`.
 
-No frontend dependency installation or build command is needed for demo mode. The opt-in backend requires `npm ci` and `npm run build`; follow [the configuration guide](docs/SUPABASE.md) after schema verification. A local HTTP server is recommended for consistent browser storage and navigation behaviour.
+No frontend dependency installation or build command is needed for demo mode. The opt-in backend requires `npm ci` and `npm run build`; follow [the configuration guide](docs/SUPABASE.md) after the migration succeeds. Generated previews are served from `build/`; `dist/` remains the demo source. A local HTTP server is recommended for consistent browser storage and navigation behaviour.
 
 ### 3. Try the demo
 
