@@ -1,0 +1,2 @@
+-- RETIRED: this draft used unverified column names. Do not execute.
+-- Use the complete reviewed supabase/001-align-existing-schema.sql instead.

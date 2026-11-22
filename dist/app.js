@@ -1,5 +1,14 @@
-function listingStatusText(x){if(dateRangeValid(x.blockedFrom,x.blockedUntil))return localDate()>=x.blockedFrom&&localDate()<x.blockedUntil?'Rented out':'Available (see dates)';return x.status==='sold'?'Sold':x.status==='rented'?(x.mode==='share'?'On loan':'Rented out'):'Available'}
+function listingStatusText(x){if(x.status==='inactive')return 'Inactive';if(dateRangeValid(x.blockedFrom,x.blockedUntil))return localDate()>=x.blockedFrom&&localDate()<x.blockedUntil?'Rented out':'Available (see dates)';return x.status==='sold'?'Sold':x.status==='rented'?(x.mode==='share'?'On loan':'Rented out'):'Available'}
 /* DormMart core application logic */
+const LIVE_MODE = window.DORMMART_CONFIG?.mode === 'supabase';
+const GUEST_MODE = LIVE_MODE && window.DORMMART_CONFIG?.guestMode === true;
+function guestAccountNotice() { toast('Accounts are paused. You can browse listings; publishing and messaging will return with accounts.'); }
+function guestAccountPanel(title) { return `<div class="profile-heading"><h1>${title}</h1></div><p class="notice">Accounts are temporarily paused. Browse public listings while we work on the next features. Publishing, profiles and private messaging are unavailable in guest mode.</p><a class="button" href="#explore">Explore items ↗</a>`; }
+const defaultCategories = [...new Set(LISTINGS.map(x=>x.category))];
+let liveGeneration = 0;
+function listingId(value) { return LIVE_MODE ? String(value) : Number(value); }
+if (LIVE_MODE) LISTINGS.splice(0);
+
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
 const money = n => '₹' + Number(n).toLocaleString('en-IN');
@@ -14,16 +23,32 @@ function readStore(key, fallback) {
   }
 }
 
+// Saved items and comparison live in this browser only. Live data is kept apart from demo data
+// and scoped per account ("guest" or the user id), so switching accounts never mixes lists.
+let storageScope = LIVE_MODE ? null : 'demo';
+const LIVE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function storageKey(key) { return LIVE_MODE ? `${key}:live:${storageScope}` : key; }
+function validIdList(list) { return list.filter(LIVE_MODE ? (id => typeof id === 'string' && LIVE_ID.test(id)) : Number.isInteger); }
 function persist(key, value) {
   try {
-    localStorage.setItem(key, JSON.stringify(value));
+    if (LIVE_MODE && !storageScope) return;
+    localStorage.setItem(storageKey(key), JSON.stringify(value));
   } catch {
     toast('Browser storage is unavailable. Changes last for this visit.');
   }
 }
+function setStorageScope(scope) {
+  storageScope = scope;
+  saved = scope ? validIdList(readStore(storageKey('dormmart-saved'), [])).slice(0, 200) : [];
+  window.dispatchEvent(new Event('dormmart-scope-change'));
+}
 
-let saved = readStore('dormmart-saved', []).filter(Number.isInteger);
-let requests = readStore('dormmart-requests', []).filter(x => x && Number.isInteger(x.itemId) && typeof x.id === 'string');
+// Live catalogue loading state: 'loading' | 'ready' | 'error'. Demo data is always ready.
+let catalogueState = LIVE_MODE ? 'loading' : 'ready';
+function setCatalogueState(state) { catalogueState = state; render(); }
+
+let saved = LIVE_MODE ? [] : readStore('dormmart-saved', []).filter(Number.isInteger);
+let requests = LIVE_MODE ? [] : readStore('dormmart-requests', []).filter(x => x && Number.isInteger(x.itemId) && typeof x.id === 'string');
 let toastTimer;
 
 function toast(message) {
@@ -37,7 +62,7 @@ function toast(message) {
 
 // Global category tracking
 function getCategories() {
-  return [...new Set(LISTINGS.map(x => x.category))];
+  return [...new Set([...(LIVE_MODE?defaultCategories:[]),...LISTINGS.map(x => x.category)])];
 }
 var categories = getCategories();
 
@@ -82,7 +107,7 @@ function renderCategoryChips() {
 function itemPhoto(x, detail = false) {
   const photos = x.photos && x.photos.length ? x.photos : (x.image ? [x.image] : []);
   if (photos.length > 0 && photos[0]) {
-    return `<div class="item-art ${detail ? 'detail-art' : ''}"><img src="${escapeHTML(photos[0])}" alt="${escapeHTML(x.title)} — ${x.custom ? 'owner-uploaded photo' : 'representative sample photo'}" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="photo-fallback" hidden>${escapeHTML(x.emoji || 'Photo unavailable')}</span></div>`;
+    return `<div class="item-art ${detail ? 'detail-art' : ''}"><img src="${escapeHTML(photos[0])}" alt="${escapeHTML(x.title)} — ${x.custom || x.live ? 'owner-uploaded photo' : 'representative sample photo'}" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="photo-fallback" hidden>${escapeHTML(x.emoji || 'Photo unavailable')}</span></div>`;
   }
   return `<div class="item-art ${detail ? 'detail-art' : ''}" style="--item-color:${escapeHTML(x.color || '#e0e5d9')}" aria-hidden="true"><span>${escapeHTML(x.emoji || '📦')}</span></div>`;
 }
@@ -103,7 +128,7 @@ function card(x) {
       <div class="card-body">
         <div class="card-meta">
           <span>${escapeHTML(x.category)}</span>
-          <span>◎ ${x.custom ? 'Your listing' : x.distance + ' km away'}</span>
+          <span>◎ ${x.custom ? 'Your listing' : x.live ? escapeHTML(x.area) : x.distance + ' km away'}</span>
         </div>
         <h3><a class="card-link" href="#item-${x.id}">${escapeHTML(x.title)}</a></h3>
         <span class="condition-badge">${listingStatusText(x)}</span> <span class="condition-badge">${escapeHTML(x.condition || 'Good')}</span>
@@ -112,7 +137,7 @@ function card(x) {
         </div>
         <div class="seller">
           <span>${escapeHTML(x.owner)} ${x.verified ? '<span class="verified">✓ Email verified</span>' : ''}</span>
-          <span>${x.reviews ? '★ ' + x.rating + ' (' + x.reviews + ')' : 'No reviews'}</span>
+          <span>${x.live ? '' : x.reviews ? '★ ' + x.rating + ' (' + x.reviews + ')' : 'No reviews'}</span>
         </div>
       <button type="button" class="compare-toggle" data-compare="${x.id}" aria-pressed="false" aria-label="Compare ${escapeHTML(x.title)}"><span aria-hidden="true">＋</span> Compare item</button></div>
     </article>
@@ -173,11 +198,20 @@ function render() {
   const f = filters();
   const items = filterListings(LISTINGS, f, saved);
 
+  const loading = catalogueState === 'loading', failed = catalogueState === 'error';
   $('#results').innerHTML = items.map(card).join('');
-  $('#result-count').textContent = `${items.length} ${items.length === 1 ? 'find' : 'finds'} nearby`;
-  $('#empty').hidden = items.length > 0;
+  $('#result-count').textContent = loading ? 'Loading listings…' : failed ? 'Listings could not load.' : `${items.length} ${items.length === 1 ? 'find' : 'finds'}${LIVE_MODE ? '' : ' nearby'}`;
+  $('#results').setAttribute('aria-busy', String(loading));
+  $('#empty').hidden = loading || (items.length > 0 && !failed);
+  const emptyTitle = $('#empty h2'), emptyText = $('#empty p');
+  if (failed) { emptyTitle.textContent = 'Listings could not load.'; emptyText.textContent = 'Check your connection, then try again.'; }
+  else if (LIVE_MODE && !LISTINGS.length) { emptyTitle.textContent = 'No listings yet.'; emptyText.textContent = 'Nothing has been listed here yet. Check back soon, or ask your campus on the request board.'; }
+  else { emptyTitle.textContent = 'No finds just yet.'; emptyText.textContent = LIVE_MODE ? 'Try another search or clear a filter.' : 'Try a wider radius or clear a filter.'; }
+  let retry = $('#catalogue-retry');
+  if (!retry) { retry = document.createElement('button'); retry.type = 'button'; retry.id = 'catalogue-retry'; retry.className = 'text-btn'; retry.textContent = 'Try again'; retry.onclick = () => window.retryCatalogue?.(); $('#empty').append(retry); }
+  retry.hidden = !failed || !window.retryCatalogue;
   $('#radius-value').value = $('#radius').value;
-  $('#saved-count').textContent = saved.length;
+  $('#saved-count').textContent = LIVE_MODE && catalogueState === 'ready' ? saved.filter(id => LISTINGS.some(x => x.id === id)).length : saved.length;
 
   const clearSearchBtn = $('#clear-search-btn');
   if (clearSearchBtn) {
@@ -188,7 +222,8 @@ function render() {
   renderActiveFiltersBar(f);
 
   // Home featured items
-  $('#featured').innerHTML = LISTINGS.slice(0, 4).map(card).join('');
+  $('#featured').innerHTML = LISTINGS.length ? LISTINGS.slice(0, 4).map(card).join('')
+    : LIVE_MODE ? `<p class="micro" role="status">${loading ? 'Loading listings…' : failed ? 'Listings could not load.' : 'No listings yet. New items will appear here.'}</p>` : '';
 }
 
 // Filter listeners
@@ -253,14 +288,14 @@ $('#explore-categories')?.addEventListener('click', handleCategoryClick);
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-save]');
   if (!b) return;
-  const id = Number(b.dataset.save);
+  const id = listingId(b.dataset.save);
   saved = saved.includes(id) ? saved.filter(x => x !== id) : [...saved, id];
   persist('dormmart-saved', saved);
   render();
 
   const targetSelector = lastPage === 'explore' ? '#results' : '#featured';
   document.querySelector(`${targetSelector} [data-save="${id}"]`)?.focus();
-  toast(saved.includes(id) ? 'Saved for later.' : 'Removed from saved items.');
+  toast(saved.includes(id) ? (LIVE_MODE ? 'Saved on this browser.' : 'Saved for later.') : 'Removed from saved items.');
 });
 
 // Header saved button
@@ -304,7 +339,12 @@ function nextDate() {
 // Full item detail page
 function openItem(id) {
   const x = LISTINGS.find(item => item.id === id);
-  if (!x) {showItemContent('<h1 id="item-title">This item is no longer available.</h1><p>It may have been removed from this browser.</p>');return;}
+  if (!x) {
+    if (LIVE_MODE && catalogueState === 'loading') { showItemContent('<h1 id="item-title">Loading this listing…</h1><p role="status">One moment.</p>'); return; }
+    if (LIVE_MODE && catalogueState === 'error') { showItemContent('<h1 id="item-title">This listing could not load.</h1><p>Check your connection, then reload the page.</p>'); return; }
+    showItemContent(`<h1 id="item-title">This item is no longer available.</h1><p>${LIVE_MODE ? 'It may have been sold or removed by its owner, or the link is incomplete.' : 'It may have been removed from this browser.'}</p><a class="button" href="#explore">Explore other items ↗</a>`);
+    return;
+  }
 
   const rental = x.mode === 'rent';
   const borrow = x.mode !== 'buy';
@@ -315,10 +355,10 @@ function openItem(id) {
 
     <div class="item-detail-layout"><div class="item-visual">${itemPhoto(x, true)}
     ${x.photos?.length > 1 ? `<div class="detail-gallery">${x.photos.slice(1).map((p, i) => `<img src="${escapeHTML(p)}" alt="${escapeHTML(x.title)} photo ${i + 2}">`).join('')}</div>` : ''}
-    <p class="micro">${x.custom ? 'Owner-uploaded photos. Condition is self-reported.' : 'Representative sample photo, not evidence of this specific item’s condition.'}</p>
+    <p class="micro">${x.custom || x.live ? 'Owner-uploaded photos. Condition is self-reported.' : 'Representative sample photo, not evidence of this specific item’s condition.'}</p>
 
     </div><div class="item-info"><div class="item-page-price">${x.price?money(x.price):'Free'} <small>${rental?'/ day':borrow?'to borrow':'one-time price'}</small></div><div class="trust-badges-row">
-      ${x.verified ? '<span class="badge-chip badge-email">✓ Email verified</span>' : '<span class="badge-chip">Email not verified</span>'}
+      ${x.verified ? '<span class="badge-chip badge-email">✓ Email verified</span>' : x.live ? '' : '<span class="badge-chip">Email not verified</span>'}
       ${x.student ? '<span class="badge-chip badge-student">🎓 Student affiliation reviewed</span>' : ''}
       <span class="badge-chip badge-condition">Condition: ${escapeHTML(x.condition || 'Good')}</span>
       <span class="badge-chip badge-pickup">◎ ${x.area ? escapeHTML(x.area) : x.pickupSpot ? escapeHTML(x.pickupSpot) : 'Campus main gate'}</span>
@@ -330,7 +370,7 @@ function openItem(id) {
     <div class="trust-passport">
       <h4>🛡 Campus Trust & Safety Notes</h4>
       <p>
-        <strong>${escapeHTML(x.owner)}</strong> · ${x.custom ? 'Your listing' : x.distance + ' km away'} · ${x.reviews ? '★ ' + x.rating + ' (' + x.reviews + ' reviews)' : 'No reviews yet'}.
+        <strong>${escapeHTML(x.owner)}</strong> · ${x.custom ? 'Your listing' : x.live ? escapeHTML(x.area) : x.distance + ' km away'}${x.live ? '' : ' · ' + (x.reviews ? '★ ' + x.rating + ' (' + x.reviews + ' reviews)' : 'No reviews yet')}.
         <br>All meetups take place at designated public campus spots during daylight. Never transfer an original identity card or passport as collateral.
       </p>
     </div>
@@ -379,6 +419,13 @@ function openItem(id) {
   `);
 
   const form = $('#booking-form');
+  if (LIVE_MODE && x.listingType==='both')form.insertAdjacentHTML('beforebegin','<p class="notice">This existing listing offers sale or rental. Ask the owner which option the price covers.</p>');
+  if (LIVE_MODE) {
+    form.innerHTML='';
+    if (window.renderLiveBooking) window.renderLiveBooking(x, form);
+    else form.innerHTML='<p class="notice">Message the owner to discuss availability and a public pickup point.</p>';
+    return;
+  }
   function quote() {
     const data = new FormData(form);
     let days = borrow ? (Date.parse(data.get('end')) - Date.parse(data.get('start'))) / 86400000 : 1;
@@ -446,6 +493,7 @@ function openItem(id) {
 
 // "My demo requests" modal
 $('#requests-button').onclick = () => {
+  if (LIVE_MODE) { window.openLiveBookings ? window.openLiveBookings() : toast('Online bookings are not available yet.'); return; }
   showModal(`
     <p class="eyebrow">SAVED IN THIS BROWSER</p>
     <h2 id="modal-title">Your demo requests</h2>
@@ -542,7 +590,7 @@ function route() {
   if(!hash.startsWith('#item-')){$('#item-view').hidden=true;$('#item-view').replaceChildren()}
   if(window.renderCommunityRoute && renderCommunityRoute(hash))return;
   if (hash.startsWith('#item-')) {
-    openItem(Number(hash.slice(6)));
+    openItem(listingId(hash.slice(6)));
     return;
   }
 
@@ -568,6 +616,21 @@ function route() {
 }
 
 window.addEventListener('hashchange', route);
+
+// Live data has no measured distances, reviews or verification badges: hide controls and copy
+// that would imply them, without changing layout or styles.
+if (LIVE_MODE) {
+  $('#radius').closest('label').hidden = true;
+  $('#verified').closest('label').hidden = true;
+  const sort = $('#sort');
+  sort.querySelector('option[value="distance"]')?.remove();
+  const newest = sort.querySelector('option[value="newest"]');
+  sort.prepend(newest); newest.defaultSelected = true; sort.value = 'newest';
+  $('#explore-view .location').innerHTML = '◎ Campus pickup areas<br><small>Set by each owner</small>';
+  for (const note of $$('#home-view .hero-copy .micro')) if (note.textContent.includes('illustrative')) note.textContent = '◎ Public pickup areas · real listings from your campus';
+  $('#home-view .fresh-shelf')?.setAttribute('hidden', '');
+  for (const p of $$('#how li p')) if (p.textContent.includes('verification badges')) p.textContent = 'Check owner photos, condition notes and the public pickup area.';
+}
 
 // Initialize
 updateCategoryDropdown();

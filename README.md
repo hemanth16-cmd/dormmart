@@ -19,7 +19,7 @@
 
 DormMart helps students discover affordable items nearby and give unused belongings another life. Instead of buying something new for a short-term need, users can explore rentals, second-hand purchases and free borrowing—or post a request for something they cannot find.
 
-**Current stage:** a functional frontend prototype built with vanilla HTML, CSS and JavaScript. The marketplace uses mock inventory and browser-local storage. A backend, real authentication and live multi-user communication are future work.
+**Current stage:** the default site remains a vanilla HTML/CSS/JavaScript demo. This branch adds an opt-in Supabase integration for auth, profiles, listings/photos and private messages. It is disabled pending the reviewed schema-alignment migration and live-account tests. See [Supabase integration and release checks](docs/SUPABASE.md).
 
 **Live demo:** [dormmart.vercel.app](https://dormmart.vercel.app)
 
@@ -115,10 +115,10 @@ git clone https://github.com/hemanth16-cmd/dormmart.git
 cd dormmart
 ```
 
-The frontend updates are developed on `combined-frontend`. To view that version:
+The latest merged frontend is on `main`. The older `combined-frontend` branch has already been merged:
 
 ```bash
-git switch combined-frontend
+git switch main
 ```
 
 ### 2. Start a local preview
@@ -131,7 +131,7 @@ python -m http.server 4173 --directory dist
 
 Open **[localhost:4173](http://localhost:4173)** in your browser. If your Windows installation uses the Python launcher, replace `python` with `py`.
 
-No frontend dependency installation or build command is needed. A local HTTP server is recommended for consistent browser storage and navigation behaviour.
+No frontend dependency installation or build command is needed for demo mode. The opt-in backend requires `npm ci` and `npm run build`; follow [the configuration guide](docs/SUPABASE.md) after the migration succeeds. Generated previews are served from `build/`; `dist/` remains the demo source. A local HTTP server is recommended for consistent browser storage and navigation behaviour.
 
 ### 3. Try the demo
 

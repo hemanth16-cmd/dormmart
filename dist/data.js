@@ -245,7 +245,7 @@ LISTINGS.push(...[
     "color": "#DCE4D7"
   }
 ]);
-function filterListings(items, filters, savedIds=[]){return items.filter(x=>(filters.mode==='all'||x.mode===filters.mode)&&(filters.category==='all'||x.category===filters.category)&&x.distance<=filters.radius&&(filters.price===''||x.price<=Number(filters.price))&&(!filters.verified||x.verified)&&(!filters.saved||savedIds.includes(x.id))&&(x.title+' '+x.category+' '+x.description).toLowerCase().includes(filters.query.trim().toLowerCase())).sort((a,b)=>filters.sort==='price'?a.price-b.price:filters.sort==='newest'?b.id-a.id:a.distance-b.distance)}
+function filterListings(items, filters, savedIds=[]){return items.filter(x=>(filters.mode==='all'||x.mode===filters.mode)&&(filters.category==='all'||x.category===filters.category)&&(x.distance==null||x.distance<=filters.radius)&&(filters.price===''||x.price<=Number(filters.price))&&(!filters.verified||x.verified)&&(!filters.saved||savedIds.includes(x.id))&&(x.title+' '+x.category+' '+x.description).toLowerCase().includes(filters.query.trim().toLowerCase())).sort((a,b)=>filters.sort==='price'?a.price-b.price:filters.sort==='newest'?(Date.parse(b.createdAt)||Number(b.id)||0)-(Date.parse(a.createdAt)||Number(a.id)||0):a.distance-b.distance)}
 function calculateQuote(item,days,security){const fee=item.mode==='rent'?item.price*days:item.price;const deposit=item.mode==='rent'&&security!=='guarantor'?item.deposit:0;return {fee,deposit,total:fee+deposit}}
 if(typeof module!=='undefined')module.exports={LISTINGS,filterListings,calculateQuote};
 
@@ -254,7 +254,7 @@ function validDate(value) {
  return typeof value==='string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0,10)===value;
 }
 function dateRangeValid(start,end){return validDate(start)&&validDate(end)&&start<end}
-function listingUnavailable(item){return item.status==='sold'||(item.status==='rented'&&!dateRangeValid(item.blockedFrom,item.blockedUntil))}
+function listingUnavailable(item){return item.status==='inactive'||item.status==='sold'||(item.status==='rented'&&!dateRangeValid(item.blockedFrom,item.blockedUntil))}
 function rentalDateError(item,start,end,bookings=[],excludeId){
  if(listingUnavailable(item))return 'This item is currently unavailable.';
  if(item.mode==='buy')return '';

@@ -1,0 +1,21 @@
+{
+  "name": "dormmart",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "build": "node scripts/build.cjs",
+    "test": "node --test tests/*.test.cjs",
+    "test:backend": "node tests/backend-browser.cjs",
+    "check:live": "node scripts/live-check.cjs",
+    "build:demo": "node scripts/build.cjs --demo",
+    "test:browser": "node tests/backend-browser.cjs && node tests/backend-browser.cjs --guest && node tests/workflows-browser.cjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.119.2"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.17",
+    "esbuild": "0.28.2",
+    "playwright": "1.65.1"
+  }
+}

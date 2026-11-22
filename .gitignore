@@ -1,5 +1,11 @@
 # Dependencies
 node_modules/
+dist/vendor/
+build/
+build-demo/
+test-results/
+*-desktop.png
+*-mobile.png
 
 # Environment and credentials
 .env
