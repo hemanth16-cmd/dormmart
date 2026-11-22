@@ -139,9 +139,22 @@ const base=()=>'http://127.0.0.1:'+server.address().port+'/';
   {
    const {page,errors}=await livePage(browser,false);
    await page.goto(base());
+   // Signed out: browsing and booking estimates work; private actions open sign-in instead of failing.
+   await page.locator('#featured .card').first().waitFor();
+   await page.evaluate(id=>location.hash='item-'+id,RENT);await page.locator('#booking-form [name=start]').waitFor();
+   assert.equal(await page.locator('#booking-form [type=submit]').isDisabled(),true);
+   await page.locator('#booking-form [data-open-signin]').click();await page.locator('#auth-screen').waitFor({state:'visible'});
+   assert.match(await page.locator('.auth-panel .notice').innerText(),/Sign in to request dates/);
+   await page.getByRole('button',{name:'← Keep browsing without an account'}).click();await page.locator('#item-title').waitFor();
+   await page.evaluate(()=>location.hash='messages');await page.locator('#messages-view [data-open-signin]').waitFor();assert.equal(await page.locator('#message-form').count(),0);
+   await page.evaluate(()=>location.hash='wanted');await page.locator('.wanted-card').first().waitFor();
+   assert.match(await page.locator('.board-notice').innerText(),/Sign in to post a request/);
+   await page.locator('#new-wanted').click();await page.locator('#auth-screen').waitFor({state:'visible'});assert.equal(await page.locator('#wanted-form').count(),0);
+   assert.equal(await page.evaluate(()=>window.tables.item_requests.length+window.tables.booking_requests.length),2,'signed-out visitors wrote nothing');
    await page.locator('#auth-form [type=submit]:enabled').waitFor();
    await page.locator('#demo-contact').fill('alice@example.test');await page.locator('#demo-password').fill('password');await page.locator('#auth-form [type=submit]').click();
    await page.locator('#main').waitFor({state:'visible'});
+   await page.waitForFunction(()=>demoSignedIn);
    // Booking with a lost response, then a safe retry: one request only.
    await page.evaluate(id=>location.hash='item-'+id,RENT);await page.locator('#booking-form [name=start]').waitFor();
    const [s,e]=await page.evaluate(()=>[day(2),day(5)]);

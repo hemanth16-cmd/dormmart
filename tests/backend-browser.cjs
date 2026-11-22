@@ -64,6 +64,13 @@ function mock(){
    await page.reload();await page.locator('#main').waitFor({state:'visible'});assert.equal(await page.locator('#auth-screen').isVisible(),false);
    assert.deepEqual(errors,[]);console.log('PASS: guest entry, public-only reads, no stored session, disabled account writes, detail navigation, reload and mobile layout.');return;
   }
+  // Accounts are optional: the public catalogue opens without signing in.
+  await page.locator('#main').waitFor({state:'visible'});assert.equal(await page.locator('#auth-screen').isVisible(),false);
+  await page.locator('#featured .card').first().waitFor();assert.equal(await page.locator('#account-button .profile-nav-label').innerText(),'Sign in');
+  await page.locator('#list-button').click();await page.locator('#auth-screen').waitFor({state:'visible'});
+  assert.match(await page.locator('.auth-panel .notice').innerText(),/Sign in to publish a listing/);
+  await page.getByRole('button',{name:'← Keep browsing without an account'}).click();await page.locator('#main').waitFor({state:'visible'});
+  await page.locator('#account-button').click();await page.locator('#auth-screen').waitFor({state:'visible'});
   await page.locator('#auth-form [type=submit]:enabled').waitFor();
   await page.locator('#demo-contact').fill('alice@example.test');await page.locator('#demo-password').fill('wrong');await page.locator('#auth-form [type=submit]').click();
   await page.getByText(/incorrect, or no account exists/).waitFor();assert.equal(await page.locator('#main').isVisible(),false);
@@ -85,6 +92,7 @@ function mock(){
   await page.locator('#auth-form [type=submit]').click();await page.getByText(/No new account was created/).waitFor();
   await page.locator('#demo-contact').fill('alice@example.test');
   await page.locator('#demo-password').fill('correct-password');await page.locator('#auth-form [type=submit]').click();await page.locator('#main').waitFor({state:'visible'});
+  await page.waitForFunction(()=>document.querySelector('#account-button .profile-nav-label').textContent==='My profile');
   assert.equal(await page.locator('#results .card').count(),2);
   await page.reload();await page.locator('#main').waitFor({state:'visible'});assert.equal(await page.locator('#results .card').count(),2);
   await page.evaluate(()=>location.hash='item-33333333-3333-4333-8333-333333333333');await page.locator('#item-title').waitFor();
@@ -105,7 +113,9 @@ function mock(){
   await page.locator('#account-button').click();await page.locator('#profile-form').waitFor();
   await page.evaluate(()=>window.switchAccount());await page.getByRole('heading',{name:'Bob',exact:true}).waitFor();assert.equal(await page.locator('.owned-card').count(),1);assert.doesNotMatch(await page.locator('#profile-view').innerText(),/Alice updated|New shared listing/);
   await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
-  await page.locator('#profile-signout').click();await page.locator('#auth-screen').waitFor({state:'visible'});assert.equal(await page.locator('#profile-view').innerText(),'');assert.equal(await page.locator('#results .card').count(),0);
+  await page.locator('#profile-signout').click();await page.getByText('You have signed out. You can keep browsing.').waitFor();
+  assert.equal(await page.locator('#auth-screen').isVisible(),false);assert.doesNotMatch(await page.locator('#profile-view').innerText(),/Bob|Alice updated|New shared listing/);
+  await page.waitForFunction(()=>document.querySelector('#account-button .profile-nav-label').textContent==='Sign in');assert.equal(await page.locator('#owned-grid, .owned-card').count(),0);
   await page.setViewportSize({width:1440,height:1000});
   // Expired email link: clear message, URL cleaned, still signed out.
   await page.evaluate(()=>{location.hash='error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid';location.reload()});
@@ -120,9 +130,10 @@ function mock(){
   assert.equal(await page.evaluate(()=>window.fakeClient.auth.authCalls.some(c=>c[0]==='update')),false,'browser validation blocks a short password');
   await page.locator('#demo-password').fill('a-new-long-password');await page.locator('#auth-form [type=submit]').click();
   await page.locator('#main').waitFor({state:'visible'});
-  await page.locator('#account-button').click();await page.locator('#profile-signout').click();await page.locator('#auth-screen').waitFor({state:'visible'});
+  await page.locator('#account-button').click();await page.locator('#profile-signout').click();await page.waitForFunction(()=>document.querySelector('#account-button .profile-nav-label').textContent==='Sign in');
   await page.route('**/backend-config.js',r=>r.fulfill({contentType:'text/javascript',body:"window.DORMMART_CONFIG={mode:'supabase',url:'https://flwrsjhldghbullanaqz.supabase.co',publishableKey:'sb_secret_rejected_test',schemaVerified:true}"}));
-  await page.reload();await page.getByText(/DormMart could not connect/).waitFor();assert.equal(await page.locator('#auth-form [type=submit]').isDisabled(),true);assert.equal(await page.locator('#main').isVisible(),false);
+  await page.reload();await page.locator('#featured').getByText('Listings could not load.').waitFor();
+  assert.match(await page.locator('.auth-panel .notice').textContent(),/DormMart could not connect/);assert.equal(await page.locator('#auth-form [type=submit]').isDisabled(),true);
   assert.deepEqual(errors,[]);console.log('PASS: live auth (wrong password, unconfirmed, resend cooldown, email rate limit, existing-email signup, expired link, password recovery), UUID routing, listing publish, message retry, profile failure, account isolation and mobile layout (mock SDK).');
  }finally{await browser.close();server.close()}
 })().catch(e=>{console.error(e);server.close();process.exitCode=1});

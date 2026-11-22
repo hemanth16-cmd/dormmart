@@ -2,8 +2,21 @@ function listingStatusText(x){if(x.status==='inactive')return 'Inactive';if(date
 /* DormMart core application logic */
 const LIVE_MODE = window.DORMMART_CONFIG?.mode === 'supabase';
 const GUEST_MODE = LIVE_MODE && window.DORMMART_CONFIG?.guestMode === true;
+// GUEST_MODE = accounts paused: public browsing only, sign-in hidden.
+// Otherwise live mode is public by default and an account is needed only for private actions.
+let authRequested = false;
+const needsAccount = () => LIVE_MODE && !demoSignedIn;
 function guestAccountNotice() { toast('Accounts are paused. You can browse listings; publishing and messaging will return with accounts.'); }
-function guestAccountPanel(title) { return `<div class="profile-heading"><h1>${title}</h1></div><p class="notice">Accounts are temporarily paused. Browse public listings while we work on the next features. Publishing, profiles and private messaging are unavailable in guest mode.</p><a class="button" href="#explore">Explore items ↗</a>`; }
+function accountPrompt(action) {
+  if (GUEST_MODE) { guestAccountNotice(); return; }
+  if (LIVE_MODE && window.openSignIn) { window.openSignIn(action); return; }
+  syncAuth();
+}
+function guestAccountPanel(title, action = 'use this page') {
+  if (GUEST_MODE) return `<div class="profile-heading"><h1>${title}</h1></div><p class="notice">Accounts are temporarily paused. Browse public listings while we work on the next features. Publishing, profiles and private messaging are unavailable in guest mode.</p><a class="button" href="#explore">Explore items ↗</a>`;
+  return `<div class="profile-heading"><h1>${title}</h1></div><p class="notice">Sign in to ${escapeHTML(action)}. Listings and the request board stay open without an account.</p><button class="button" type="button" data-open-signin="${escapeHTML(action)}">Sign in or create an account ↗</button> <a class="text-btn" href="#explore">Keep browsing</a>`;
+}
+document.addEventListener('click', e => { const b = e.target.closest('[data-open-signin]'); if (b) accountPrompt(b.dataset.openSignin || 'continue'); });
 const defaultCategories = [...new Set(LISTINGS.map(x=>x.category))];
 let liveGeneration = 0;
 function listingId(value) { return LIVE_MODE ? String(value) : Number(value); }

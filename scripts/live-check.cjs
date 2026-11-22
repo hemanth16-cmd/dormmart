@@ -46,10 +46,24 @@ if(!args.has('--confirm-writes')&&!args.has('--sign-in-only')){
 
 const results=[];let failed=0;
 function record(ok,name,detail=''){results.push({ok,name});if(!ok)failed++;console.log(`${ok?'PASS':'FAIL'}  ${name}${detail?'  -- '+detail:''}`)}
-async function check(name,fn){try{const detail=await fn();record(true,name,typeof detail==='string'?detail:'')}catch(e){record(false,name,e.message)}}
+const prerequisites=new Set([
+  'database contract version is 4',
+  'trigger-created profiles exist for A, B and C',
+  "A uploads photos into A's own folder",
+  'A creates a sale listing with two photos (atomic RPC)',
+  'A creates a rental with deposit, dates and a blocked range',
+  'A creates a free-sharing listing',
+  'B starts a conversation; repeating returns the same conversation',
+  'B sends a message',
+  'rental is still active for booking tests',
+  'B requests the rental; retry with the same id does not duplicate',
+  'C sends an overlapping pending request',
+  'A posts a request; anonymous visitors can read it but not write'
+]);
+async function check(name,fn){try{const detail=await fn();record(true,name,typeof detail==='string'?detail:'')}catch(e){record(false,name,e.message);if(prerequisites.has(name))throw Error('Prerequisite failed; dependent checks were not run. Test records/uploads may remain. Fix the reported error before retrying.')}}
 function must(cond,message){if(!cond)throw Error(message)}
 const errText=e=>e?[e.code,e.statusCode||e.status,e.message].filter(Boolean).join(' / ').slice(0,160):'';
-async function denied(promise,label){const r=await promise;must(r.error,`${label} was ALLOWED (expected denial)`);return 'denied: '+errText(r.error)}
+async function denied(promise,label){const r=await promise;must(r.error,`${label} was ALLOWED (expected denial)`);must(['42501','23514','23P01','P0001','AccessDenied','EntityTooLarge','InvalidMimeType','Duplicate'].includes(r.error.code),`${label}: unexpected error, not a proven denial: ${errText(r.error)}`);return 'denied: '+errText(r.error)}
 const client=()=>createClient(URL_,KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
 
 function explainSignIn(error){
@@ -84,7 +98,7 @@ function explainSignIn(error){
   const save=(u,id,product,paths,create)=>u.c.rpc('dormmart_save_product',{p_id:id,p_product:product,p_paths:paths,p_create:create});
 
   // ---------- Schema / profiles ----------
-  await check('database contract version is 2 or 3',async()=>{const {data,error}=await A.c.rpc('dormmart_contract_version');must(!error,errText(error));must([2,3].includes(data),'got '+data);return 'version '+data});
+  await check('database contract version is 4',async()=>{const {data,error}=await A.c.rpc('dormmart_contract_version');must(!error,errText(error));must(data===4,'got '+data);return 'version '+data});
   await check('trigger-created profiles exist for A, B and C',async()=>{for(const u of [A,B,C]){const {data,error}=await u.c.from('profiles').select('id').eq('id',u.id).maybeSingle();must(!error&&data,'missing profile '+(error?errText(error):''))}});
   await check('A edits own profile and the change persists',async()=>{
     const before=(await A.c.from('profiles').select('bio').eq('id',A.id).single()).data;
@@ -145,6 +159,7 @@ function explainSignIn(error){
   await check('B cannot send as A (sender spoofing)',async()=>denied(B.c.from('messages').insert({conversation_id:chat,sender_id:A.id,content:'spoofed'}),'spoofed sender'));
   await check('blank message is rejected',async()=>denied(B.c.from('messages').insert({conversation_id:chat,sender_id:B.id,content:'  \n '}),'blank message'));
   await check('A replies and B loads the full history in order',async()=>{const r=await A.c.from('messages').insert({conversation_id:chat,sender_id:A.id,content:'Yes, pick it up at the library gate.'});must(!r.error,errText(r.error));const h=(await B.c.from('messages').select('sender_id').eq('conversation_id',chat).order('created_at').order('id')).data;must(h.length===2&&h[0].sender_id===B.id&&h[1].sender_id===A.id,'history: '+JSON.stringify(h.map(x=>x.sender_id===A.id?'A':'B')))});
+  await check('history persists for a fresh session (refresh) and both sides see 2 messages',async()=>{const fresh=client();const r=await fresh.auth.signInWithPassword({email:accounts[0].email,password:accounts[0].password});must(!r.error,errText(r.error));const h=(await fresh.from('messages').select('id').eq('conversation_id',chat)).data||[];await fresh.auth.signOut();must(h.length===2,'A sees '+h.length)});
   await check('C cannot read the conversation or its messages',async()=>{const a=await C.c.from('conversations').select('id').eq('id',chat),b=await C.c.from('messages').select('id').eq('conversation_id',chat);must(!a.data?.length&&!b.data?.length,'C can read private chat!')});
   await check('C cannot post into the conversation',async()=>denied(C.c.from('messages').insert({conversation_id:chat,sender_id:C.id,content:'intrusion'}),'C message'));
 
@@ -158,7 +173,7 @@ function explainSignIn(error){
   // ---------- Request board and bookings (only after migration 003, contract 4) ----------
   const contract=(await A.c.rpc('dormmart_contract_version')).data;
   if(contract>=4){
-    const rentId=created[1];
+    const rentId=P2;
     const book=(u,id,s,e)=>u.c.rpc('dormmart_request_booking',{p_id:id,p_product:rentId,p_start:s,p_end:e,p_note:'[live check]'});
     const decide=(u,id,action)=>u.c.rpc('dormmart_decide_booking',{p_id:id,p_action:action,p_note:''});
     const b1=crypto.randomUUID(),c1=crypto.randomUUID();
@@ -192,6 +207,6 @@ function explainSignIn(error){
 
   await check('sign-out ends access to private data',async()=>{await B.c.auth.signOut();const r=await B.c.from('messages').select('id').eq('conversation_id',chat);must(!r.data?.length,'still readable after sign-out')});
   for(const u of [A,C])await u.c.auth.signOut();
-  console.log(`\n${results.length-failed}/${results.length} checks passed. Test listings were archived; the test conversation was kept.`);
+  console.log(`\n${results.length-failed}/${results.length} checks passed. Test-listing archival was attempted; test chat history is retained. Review any failures before treating cleanup as complete.`);
   process.exit(failed?1:0);
 })().catch(e=>{console.error('Live check aborted:',e.message);process.exit(1)});

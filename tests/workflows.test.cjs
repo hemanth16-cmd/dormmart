@@ -180,3 +180,32 @@ test('003: request board, offers and bookings under RLS',async t=>{
     });
   }finally{await db.close()}
 });
+
+
+test('004 repairs real storage owner-column ambiguity without changing permissions',async()=>{
+  const db=await setup();
+  try{
+    await db.exec(read('supabase/002-server-timestamps-and-upload-report.sql'));
+    await db.exec(read('supabase/003-requests-offers-bookings.sql'));
+    // Supabase storage includes this legacy column; the minimal original fixture did not.
+    await db.exec('alter table storage.objects add column owner uuid');
+    const actor=actorFor(db);
+    const photo=A+'/'+SALE+'/repair.jpg';
+    await actor(A);
+    await db.query("insert into storage.objects(bucket_id,name,owner_id) values('product-images',$1,$2)",[photo,A]);
+    const product={title:'Repair test',description:'Test listing',area:'Library',category:'Home',listing_type:'sale',price:10,deposit:0,status:'active'};
+    const save=()=>db.query('select dormmart_save_product($1,$2::jsonb,$3::text[],true)',[SALE,JSON.stringify(product),[photo]]);
+    await assert.rejects(save(),/column reference "owner" is ambiguous/);
+    await db.exec('reset role');
+    await db.exec(read('supabase/004-fix-listing-owner-ambiguity.sql'));
+    await db.exec(read('supabase/004-fix-listing-owner-ambiguity.sql'));
+    await actor(A);
+    await save();await save();
+    assert.equal((await db.query('select id from products where id=$1',[SALE])).rows.length,1);
+    assert.equal((await db.query('delete from storage.objects where name=$1 returning id',[photo])).rows.length,0);
+    await actor(B);
+    await assert.rejects(save(),/Invalid image ownership/);
+    assert.equal((await db.query("update products set title='stolen' where id=$1 returning id",[SALE])).rows.length,0);
+    assert.equal((await db.query('select dormmart_contract_version() as v')).rows[0].v,4);
+  }finally{await db.close()}
+});
